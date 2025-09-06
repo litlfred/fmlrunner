@@ -19,23 +19,16 @@ FML Runner is designed as a library component for larger application frameworks,
 - Maintain separation of concerns for integration into larger frameworks
 - Support both local and remote StructureMap retrieval mechanisms
 
-## Documentation Structure
+## Documentation
 
-This project includes comprehensive requirements documentation organized into focused documents:
+This project includes focused requirements documentation:
 
-- [`REQUIREMENTS_SUMMARY.md`](./docs/REQUIREMENTS_SUMMARY.md) - **Start Here** - Complete overview and implementation roadmap
-- [`FUNCTIONAL_REQUIREMENTS.md`](./docs/FUNCTIONAL_REQUIREMENTS.md) - Detailed functional specifications (14 requirements)
-- [`API_REQUIREMENTS.md`](./docs/API_REQUIREMENTS.md) - API design and OpenAPI specifications (9 requirements)
-- [`ARCHITECTURE_REQUIREMENTS.md`](./docs/ARCHITECTURE_REQUIREMENTS.md) - System architecture and design patterns (20 requirements)
-- [`PERFORMANCE_REQUIREMENTS.md`](./docs/PERFORMANCE_REQUIREMENTS.md) - Performance and optimization requirements (26 requirements)
-- [`DEPLOYMENT_REQUIREMENTS.md`](./docs/DEPLOYMENT_REQUIREMENTS.md) - Deployment and integration guidelines (26 requirements)
-- [`openapi.yaml`](./docs/openapi.yaml) - Complete OpenAPI 3.0 specification with 12 endpoints
+- [`REQUIREMENTS.md`](./docs/REQUIREMENTS.md) - Core functional requirements and specifications
+- [`api.yaml`](./docs/api.yaml) - OpenAPI 3.0 specification for all endpoints
 
-**Total: 95 specific requirements** covering all aspects of the FML Runner library.
+## Implementation Status
 
-## Quick Start
-
-*Note: This section will be populated once the library is implemented according to the requirements specifications.*
+Requirements documentation complete. Implementation in progress using a phased approach.
 
 ## License
 

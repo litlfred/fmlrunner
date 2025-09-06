@@ -1,0 +1,153 @@
+openapi: 3.0.3
+info:
+  title: FML Runner API
+  description: API for compiling FHIR Mapping Language (FML) and executing StructureMaps
+  version: 0.1.0
+  contact:
+    name: Carl Leitner
+    url: https://github.com/litlfred/fmlrunner
+
+servers:
+  - url: /api/v1
+    description: Local development server
+
+paths:
+  /compile:
+    post:
+      summary: Compile FML to StructureMap
+      description: Takes FHIR Mapping Language content and compiles it to a FHIR StructureMap JSON resource
+      operationId: compileFml
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fmlContent:
+                  type: string
+                  description: The FML content to compile
+              required:
+                - fmlContent
+      responses:
+        '200':
+          description: Successfully compiled FML to StructureMap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMap'
+        '400':
+          description: Invalid FML content or compilation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /execute:
+    post:
+      summary: Execute StructureMap transformation
+      description: Execute a StructureMap on provided content
+      operationId: executeStructureMap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                structureMapReference:
+                  type: string
+                  description: Reference to the StructureMap (URL or local path)
+                inputContent:
+                  type: object
+                  description: The content to transform
+              required:
+                - structureMapReference
+                - inputContent
+      responses:
+        '200':
+          description: Successfully executed transformation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    description: The transformed output
+        '400':
+          description: Invalid input or execution error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /structuremap/{reference}:
+    get:
+      summary: Retrieve StructureMap
+      description: Retrieve a StructureMap by reference (from directory or URL)
+      operationId: getStructureMap
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The StructureMap reference (filename or canonical URL)
+      responses:
+        '200':
+          description: Successfully retrieved StructureMap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMap'
+        '404':
+          description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    StructureMap:
+      type: object
+      description: FHIR StructureMap resource
+      properties:
+        resourceType:
+          type: string
+          enum: [StructureMap]
+        id:
+          type: string
+        url:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+        group:
+          type: array
+          items:
+            type: object
+      required:
+        - resourceType
+        - status
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Additional error details
+      required:
+        - error

@@ -1,6 +1,6 @@
 {
   "name": "fml-runner",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A Node.js library for compiling and executing FHIR Mapping Language (FML) files to transform healthcare data using FHIR StructureMaps",
   "keywords": [
     "fhir",
@@ -24,35 +24,5 @@
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
-  },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist/",
-    "docs/",
-    "README.md",
-    "LICENSE"
-  ],
-  "scripts": {
-    "build": "echo 'Build script to be implemented'",
-    "test": "echo 'Test script to be implemented'",
-    "lint": "echo 'Lint script to be implemented'",
-    "docs": "echo 'Documentation generation to be implemented'"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/fhir": "^0.0.41",
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "fhir": "^4.12.0",
-    "fhirpath": "^4.6.0",
-    "@ahryman40k/ts-fhir-types": "^4.0.39",
-    "fhir-kit-client": "^1.9.2",
-    "@medplum/core": "^4.3.11",
-    "fhirpatch": "^1.1.21"
-  },
-  "peerDependencies": {
-    "node": ">=16.0.0"
   }
 }
