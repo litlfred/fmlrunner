@@ -387,6 +387,588 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /StructureDefinitions:
+    get:
+      summary: List available StructureDefinitions
+      description: |
+        Returns a list of available StructureDefinitions (logical models, profiles, extensions)
+        from the specified source. Supports filtering and pagination for large collections.
+        Compatible with FHIR search operations.
+      operationId: listStructureDefinitions
+      tags:
+        - StructureDefinition Management
+      parameters:
+        - name: _count
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum number of results to return (FHIR standard)
+        - name: _offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of results to skip (FHIR standard)
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: The StructureDefinition publication date
+        - name: description
+          in: query
+          schema:
+            type: string
+          description: The description of the StructureDefinition
+        - name: identifier
+          in: query
+          schema:
+            type: string
+          description: External identifier for the StructureDefinition
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+          description: Intended jurisdiction for the StructureDefinition
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Computationally friendly name of the StructureDefinition
+        - name: publisher
+          in: query
+          schema:
+            type: string
+          description: Name of the publisher of the StructureDefinition
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, retired, unknown]
+          description: The current status of the StructureDefinition
+        - name: title
+          in: query
+          schema:
+            type: string
+          description: The human-friendly name of the StructureDefinition
+        - name: url
+          in: query
+          schema:
+            type: string
+          description: The uri that identifies the StructureDefinition
+        - name: version
+          in: query
+          schema:
+            type: string
+          description: The business version of the StructureDefinition
+        - name: kind
+          in: query
+          schema:
+            type: string
+            enum: [primitive-type, complex-type, resource, logical]
+          description: The kind of structure definition
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: The type defined or constrained by this structure
+      responses:
+        '200':
+          description: List of StructureDefinitions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  structureDefinitions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StructureDefinitionInfo'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '400':
+          description: Invalid search parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create new StructureDefinition
+      description: |
+        Creates a new StructureDefinition resource with server-assigned ID.
+        Compatible with FHIR create operation (POST).
+        The StructureDefinition can be uploaded as JSON with optional validation.
+      operationId: createStructureDefinition
+      tags:
+        - StructureDefinition Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/StructureDefinition'
+                - $ref: '#/components/schemas/StructureDefinitionUploadRequest'
+            examples:
+              logical_model:
+                summary: Upload logical model StructureDefinition
+                value:
+                  resourceType: "StructureDefinition"
+                  url: "http://example.org/fhir/StructureDefinition/PatientLogicalModel"
+                  version: "1.0.0"
+                  name: "PatientLogicalModel"
+                  title: "Patient Logical Model"
+                  status: "active"
+                  kind: "logical"
+                  abstract: false
+                  type: "http://example.org/fhir/StructureDefinition/PatientLogicalModel"
+                  differential:
+                    element:
+                      - path: "Patient"
+                        definition: "A patient logical model"
+                      - path: "Patient.identifier"
+                        min: 1
+                        max: "*"
+                        type:
+                          - code: "Identifier"
+              with_validation:
+                summary: Upload with validation options
+                value:
+                  type: "structureDefinition"
+                  content:
+                    resourceType: "StructureDefinition"
+                    url: "http://example.org/fhir/StructureDefinition/PatientLogicalModel"
+                    name: "PatientLogicalModel"
+                    status: "active"
+                    kind: "logical"
+                    abstract: false
+                    type: "http://example.org/fhir/StructureDefinition/PatientLogicalModel"
+                  options:
+                    validate: true
+                    strictMode: false
+                  metadata:
+                    description: "Patient logical model for validation"
+                    author: "FHIR Team"
+                    experimental: true
+      responses:
+        '201':
+          description: StructureDefinition created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created StructureDefinition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureDefinitionCreateResponse'
+        '400':
+          description: Invalid request or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: StructureDefinition with same URL already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /StructureDefinitions/{id}:
+    get:
+      summary: Retrieve StructureDefinition by ID
+      description: |
+        Retrieves a specific StructureDefinition by its identifier.
+        Compatible with FHIR read operation.
+      operationId: getStructureDefinitionById
+      tags:
+        - StructureDefinition Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: StructureDefinition identifier
+          example: "PatientLogicalModel"
+        - name: includeMetadata
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include metadata about retrieval source and validation
+      responses:
+        '200':
+          description: StructureDefinition retrieved successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/StructureDefinition'
+                  - $ref: '#/components/schemas/StructureDefinitionWithMetadata'
+        '404':
+          description: StructureDefinition not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Create or update StructureDefinition
+      description: |
+        Creates a new StructureDefinition or updates an existing one with the specified ID.
+        Compatible with FHIR update operation (PUT).
+        Supports validation with strict and non-strict modes.
+      operationId: createOrUpdateStructureDefinition
+      tags:
+        - StructureDefinition Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: StructureDefinition identifier
+          example: "PatientLogicalModel"
+        - name: upsert
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Whether to create if not exists (true) or only update existing (false)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/StructureDefinition'
+                - $ref: '#/components/schemas/StructureDefinitionUploadRequest'
+      responses:
+        '200':
+          description: StructureDefinition updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureDefinitionUpdateResponse'
+        '201':
+          description: StructureDefinition created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created StructureDefinition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureDefinitionCreateResponse'
+        '400':
+          description: Invalid request or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: StructureDefinition not found (when upsert=false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete StructureDefinition
+      description: |
+        Deletes a StructureDefinition by its identifier.
+        Compatible with FHIR delete operation.
+      operationId: deleteStructureDefinition
+      tags:
+        - StructureDefinition Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: StructureDefinition identifier
+          example: "PatientLogicalModel"
+        - name: cascade
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Whether to cascade delete related resources
+      responses:
+        '200':
+          description: StructureDefinition deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "StructureDefinition 'PatientLogicalModel' deleted successfully"
+                  deletedAt:
+                    type: string
+                    format: date-time
+                  cascadedDeletes:
+                    type: array
+                    items:
+                      type: string
+                    description: List of related resources that were also deleted
+        '404':
+          description: StructureDefinition not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: StructureDefinition is in use and cannot be deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /validate:
+    post:
+      summary: Validate FHIR resource or data
+      description: |
+        Validates FHIR resources or data against StructureDefinitions with support for
+        strict and non-strict validation modes. Can validate against logical models
+        and standard FHIR profiles.
+      operationId: validateResource
+      tags:
+        - Validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceValidationRequest'
+            examples:
+              patient_validation:
+                summary: Validate Patient resource
+                value:
+                  resource:
+                    resourceType: "Patient"
+                    id: "example"
+                    name:
+                      - family: "Doe"
+                        given: ["John"]
+                    birthDate: "1990-01-01"
+                  structureDefinition: "http://hl7.org/fhir/StructureDefinition/Patient"
+                  options:
+                    mode: "strict"
+                    validateReferences: false
+                    maxErrors: 10
+              logical_model_validation:
+                summary: Validate against logical model
+                value:
+                  resource:
+                    patientId: "12345"
+                    name: "John Doe"
+                    birthDate: "1990-01-01"
+                  structureDefinition: "http://example.org/fhir/StructureDefinition/PatientLogicalModel"
+                  options:
+                    mode: "non-strict"
+                    validateReferences: false
+                    maxErrors: 5
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceValidationResult'
+              examples:
+                valid_resource:
+                  summary: Valid resource
+                  value:
+                    isValid: true
+                    errors: []
+                    warnings: []
+                    validationMode: "strict"
+                    structureDefinition: "http://hl7.org/fhir/StructureDefinition/Patient"
+                    validatedAt: "2024-01-15T10:30:00Z"
+                invalid_resource:
+                  summary: Invalid resource
+                  value:
+                    isValid: false
+                    errors:
+                      - type: "CARDINALITY_VIOLATION"
+                        message: "Element 'Patient.name' has minimum cardinality 1 but found 0"
+                        path: "Patient.name"
+                        severity: "error"
+                    warnings:
+                      - type: "OPTIONAL_ELEMENT_MISSING"
+                        message: "Recommended element 'Patient.telecom' is missing"
+                        path: "Patient.telecom"
+                        severity: "warning"
+                    validationMode: "strict"
+                    structureDefinition: "http://hl7.org/fhir/StructureDefinition/Patient"
+                    validatedAt: "2024-01-15T10:30:00Z"
+        '400':
+          description: Invalid validation request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: StructureDefinition not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /execute-with-validation:
+    post:
+      summary: Execute StructureMap with validation
+      description: |
+        Executes a StructureMap transformation with input and output validation
+        against specified StructureDefinitions. Supports strict and non-strict
+        execution modes.
+      operationId: executeWithValidation
+      tags:
+        - Execution
+        - Validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidatedExecutionRequest'
+            examples:
+              patient_transformation_strict:
+                summary: Patient transformation with strict validation
+                value:
+                  structureMap:
+                    resourceType: "StructureMap"
+                    id: "PatientTransform"
+                    url: "http://example.org/fml/PatientTransform"
+                    status: "active"
+                  sourceData:
+                    resourceType: "Patient"
+                    name:
+                      - family: "Doe"
+                        given: ["John"]
+                    birthDate: "1990-01-01"
+                  options:
+                    mode: "strict"
+                    validateInput: true
+                    validateOutput: true
+                    inputStructureDefinition: "http://hl7.org/fhir/StructureDefinition/Patient"
+                    outputStructureDefinition: "http://hl7.org/fhir/StructureDefinition/Patient"
+                    stopOnError: true
+                    maxErrors: 10
+              logical_model_transformation:
+                summary: Logical model transformation with non-strict validation
+                value:
+                  structureMap:
+                    resourceType: "StructureMap"
+                    id: "LogicalModelTransform"
+                    url: "http://example.org/fml/LogicalModelTransform"
+                    status: "active"
+                  sourceData:
+                    patientId: "12345"
+                    name: "John Doe"
+                    birthDate: "1990-01-01"
+                  options:
+                    mode: "non-strict"
+                    validateInput: true
+                    validateOutput: true
+                    inputStructureDefinition: "http://example.org/fhir/StructureDefinition/PatientLogicalModel"
+                    outputStructureDefinition: "http://hl7.org/fhir/StructureDefinition/Patient"
+                    stopOnError: false
+                    maxErrors: 5
+      responses:
+        '200':
+          description: Execution completed (may include validation errors in non-strict mode)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidatedExecutionResponse'
+              examples:
+                successful_execution:
+                  summary: Successful transformation with validation
+                  value:
+                    result:
+                      resourceType: "Patient"
+                      name:
+                        - family: "Doe"
+                          given: ["John"]
+                      birthDate: "1990-01-01"
+                    isSuccess: true
+                    validationResult:
+                      input:
+                        isValid: true
+                        errors: []
+                        warnings: []
+                      output:
+                        isValid: true
+                        errors: []
+                        warnings: []
+                    errors: []
+                    warnings: []
+                    logs:
+                      - level: "INFO"
+                        message: "Input validation passed"
+                        timestamp: "2024-01-15T10:30:00Z"
+                      - level: "INFO"
+                        message: "Transformation completed successfully"
+                        timestamp: "2024-01-15T10:30:01Z"
+                      - level: "INFO"
+                        message: "Output validation passed"
+                        timestamp: "2024-01-15T10:30:02Z"
+                    performance:
+                      executionTime: 150
+                      memoryUsed: 2048
+                      validationTime: 45
+                      transformationCount: 1
+                failed_validation:
+                  summary: Execution with validation errors in strict mode
+                  value:
+                    result: null
+                    isSuccess: false
+                    validationResult:
+                      input:
+                        isValid: false
+                        errors:
+                          - type: "REQUIRED_ELEMENT_MISSING"
+                            message: "Required element 'Patient.identifier' is missing"
+                            path: "Patient.identifier"
+                            severity: "error"
+                        warnings: []
+                    errors:
+                      - code: "INPUT_VALIDATION_FAILED"
+                        message: "Input validation failed in strict mode"
+                        path: ""
+                        value: null
+                    warnings: []
+                    logs:
+                      - level: "ERROR"
+                        message: "Input validation failed"
+                        timestamp: "2024-01-15T10:30:00Z"
+                    performance:
+                      executionTime: 25
+                      memoryUsed: 1024
+                      validationTime: 20
+                      transformationCount: 0
+        '400':
+          description: Invalid execution request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: StructureMap or StructureDefinition not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /StructureMaps:
     get:
       summary: List available StructureMaps
@@ -1249,6 +1831,845 @@ components:
           default: true
           description: Whether to use cache for retrieval
 
+    StructureDefinition:
+      type: object
+      description: FHIR StructureDefinition resource for logical models and profiles
+      required:
+        - resourceType
+        - url
+        - name
+        - status
+        - kind
+        - abstract
+        - type
+      properties:
+        resourceType:
+          type: string
+          enum: [StructureDefinition]
+        id:
+          type: string
+          format: fhir-id
+        url:
+          type: string
+          format: fhir-canonical
+        version:
+          type: string
+        name:
+          type: string
+          pattern: '^[A-Z]([A-Za-z0-9_]){0,254}$'
+        title:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+        experimental:
+          type: boolean
+        date:
+          type: string
+          format: date-time
+        publisher:
+          type: string
+        contact:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactDetail'
+        description:
+          type: string
+        useContext:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsageContext'
+        jurisdiction:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeableConcept'
+        purpose:
+          type: string
+        copyright:
+          type: string
+        keyword:
+          type: array
+          items:
+            $ref: '#/components/schemas/Coding'
+        fhirVersion:
+          type: string
+        mapping:
+          type: array
+          items:
+            $ref: '#/components/schemas/StructureDefinitionMapping'
+        kind:
+          type: string
+          enum: [primitive-type, complex-type, resource, logical]
+        abstract:
+          type: boolean
+        context:
+          type: array
+          items:
+            $ref: '#/components/schemas/StructureDefinitionContext'
+        contextInvariant:
+          type: array
+          items:
+            type: string
+        type:
+          type: string
+          format: fhir-uri
+        baseDefinition:
+          type: string
+          format: fhir-canonical
+        derivation:
+          type: string
+          enum: [specialization, constraint]
+        snapshot:
+          $ref: '#/components/schemas/StructureDefinitionSnapshot'
+        differential:
+          $ref: '#/components/schemas/StructureDefinitionDifferential'
+
+    StructureDefinitionInfo:
+      type: object
+      required:
+        - id
+        - url
+        - status
+        - kind
+        - source
+      properties:
+        id:
+          type: string
+          description: StructureDefinition identifier
+        url:
+          type: string
+          format: uri
+          description: Canonical URL
+        name:
+          type: string
+          description: Human-readable name
+        version:
+          type: string
+          description: Version string
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+        kind:
+          type: string
+          enum: [primitive-type, complex-type, resource, logical]
+        description:
+          type: string
+          description: Natural language description
+        source:
+          type: string
+          enum: [directory, url, cache]
+          description: Source where StructureDefinition was found
+        lastModified:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+        size:
+          type: integer
+          description: Size in bytes
+
+    StructureDefinitionUploadRequest:
+      type: object
+      required:
+        - type
+        - content
+      properties:
+        type:
+          type: string
+          enum: [structureDefinition]
+          description: Content type indicator
+        content:
+          $ref: '#/components/schemas/StructureDefinition'
+        options:
+          type: object
+          properties:
+            validate:
+              type: boolean
+              default: false
+              description: Whether to validate the StructureDefinition
+            strictMode:
+              type: boolean
+              default: false
+              description: Enable strict validation mode
+        metadata:
+          type: object
+          properties:
+            description:
+              type: string
+              description: Human-readable description
+            author:
+              type: string
+              description: Author information
+            tags:
+              type: array
+              items:
+                type: string
+              description: Tags for categorization
+            experimental:
+              type: boolean
+              default: false
+              description: Whether this is experimental content
+
+    StructureDefinitionCreateResponse:
+      type: object
+      required:
+        - id
+        - url
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Server-assigned StructureDefinition identifier
+        url:
+          type: string
+          format: uri
+          description: Canonical URL of the created StructureDefinition
+        version:
+          type: string
+          description: Version of the created StructureDefinition
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+          description: Status of the created StructureDefinition
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the StructureDefinition was created
+        location:
+          type: string
+          format: uri
+          description: Full URL to access the created StructureDefinition
+        validationInfo:
+          type: object
+          properties:
+            wasValidated:
+              type: boolean
+              description: Whether validation was performed
+            validationTime:
+              type: integer
+              description: Validation time in milliseconds
+            warnings:
+              type: array
+              items:
+                $ref: '#/components/schemas/ValidationWarning'
+              description: Validation warnings
+
+    StructureDefinitionUpdateResponse:
+      type: object
+      required:
+        - id
+        - url
+        - status
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: StructureDefinition identifier
+        url:
+          type: string
+          format: uri
+          description: Canonical URL of the updated StructureDefinition
+        version:
+          type: string
+          description: Version of the updated StructureDefinition
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+          description: Status of the updated StructureDefinition
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the StructureDefinition was last updated
+        previousVersion:
+          type: string
+          description: Previous version before update
+        validationInfo:
+          type: object
+          properties:
+            wasValidated:
+              type: boolean
+              description: Whether validation was performed
+            validationTime:
+              type: integer
+              description: Validation time in milliseconds
+            warnings:
+              type: array
+              items:
+                $ref: '#/components/schemas/ValidationWarning'
+              description: Validation warnings
+        changesSummary:
+          type: object
+          properties:
+            elementChanges:
+              type: boolean
+              description: Whether element definitions changed
+            typeChanges:
+              type: boolean
+              description: Whether type definitions changed
+            constraintChanges:
+              type: boolean
+              description: Whether constraints changed
+
+    StructureDefinitionWithMetadata:
+      allOf:
+        - $ref: '#/components/schemas/StructureDefinition'
+        - type: object
+          properties:
+            metadata:
+              type: object
+              properties:
+                source:
+                  type: string
+                  enum: [directory, url, cache]
+                retrievedAt:
+                  type: string
+                  format: date-time
+                validationStatus:
+                  type: string
+                  enum: [valid, invalid, not-validated]
+                retrievalTime:
+                  type: integer
+                  description: Retrieval time in milliseconds
+
+    ResourceValidationRequest:
+      type: object
+      required:
+        - resource
+        - structureDefinition
+      properties:
+        resource:
+          type: object
+          description: The FHIR resource or data to validate
+        structureDefinition:
+          type: string
+          format: fhir-canonical
+          description: URL of the StructureDefinition to validate against
+        options:
+          type: object
+          properties:
+            mode:
+              type: string
+              enum: [strict, non-strict]
+              default: non-strict
+              description: Validation mode
+            validateReferences:
+              type: boolean
+              default: false
+              description: Whether to validate resource references
+            maxErrors:
+              type: integer
+              minimum: 1
+              maximum: 100
+              default: 10
+              description: Maximum number of errors to return
+
+    ResourceValidationResult:
+      type: object
+      required:
+        - isValid
+        - errors
+        - warnings
+        - validationMode
+        - validatedAt
+      properties:
+        isValid:
+          type: boolean
+          description: Whether the resource is valid
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceValidationError'
+          description: List of validation errors
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceValidationWarning'
+          description: List of validation warnings
+        validationMode:
+          type: string
+          enum: [strict, non-strict]
+          description: The validation mode used
+        structureDefinition:
+          type: string
+          format: fhir-canonical
+          description: URL of the StructureDefinition used for validation
+        validatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when validation was performed
+
+    ResourceValidationError:
+      type: object
+      required:
+        - type
+        - message
+        - path
+        - severity
+      properties:
+        type:
+          type: string
+          enum: [CARDINALITY_VIOLATION, REQUIRED_ELEMENT_MISSING, DATATYPE_MISMATCH, CONSTRAINT_VIOLATION, FIXED_VALUE_VIOLATION, PATTERN_VIOLATION, BINDING_VIOLATION]
+          description: Type of validation error
+        message:
+          type: string
+          description: Human-readable error message
+        path:
+          type: string
+          description: FHIRPath to the element that failed validation
+        severity:
+          type: string
+          enum: [error, warning]
+          description: Severity level
+        value:
+          description: The value that caused the validation error
+        expected:
+          description: The expected value or constraint
+
+    ResourceValidationWarning:
+      type: object
+      required:
+        - type
+        - message
+        - path
+        - severity
+      properties:
+        type:
+          type: string
+          enum: [OPTIONAL_ELEMENT_MISSING, STYLE_WARNING, PERFORMANCE_WARNING, COMPATIBILITY_WARNING]
+        message:
+          type: string
+        path:
+          type: string
+        severity:
+          type: string
+          enum: [warning, info]
+
+    ValidatedExecutionRequest:
+      type: object
+      required:
+        - structureMap
+        - sourceData
+        - options
+      properties:
+        structureMap:
+          $ref: '#/components/schemas/StructureMap'
+        sourceData:
+          type: object
+          description: Source data to transform
+        options:
+          type: object
+          required:
+            - mode
+          properties:
+            mode:
+              type: string
+              enum: [strict, non-strict]
+              description: Execution mode
+            validateInput:
+              type: boolean
+              default: true
+              description: Whether to validate input data
+            validateOutput:
+              type: boolean
+              default: true
+              description: Whether to validate output data
+            inputStructureDefinition:
+              type: string
+              format: fhir-canonical
+              description: StructureDefinition URL for input validation
+            outputStructureDefinition:
+              type: string
+              format: fhir-canonical
+              description: StructureDefinition URL for output validation
+            stopOnError:
+              type: boolean
+              default: true
+              description: Whether to stop execution on validation errors (strict mode only)
+            maxErrors:
+              type: integer
+              minimum: 1
+              maximum: 100
+              default: 10
+              description: Maximum number of errors to collect
+        context:
+          $ref: '#/components/schemas/ExecutionContext'
+
+    ValidatedExecutionResponse:
+      type: object
+      required:
+        - isSuccess
+        - errors
+        - warnings
+      properties:
+        result:
+          type: object
+          description: Transformed data result (null if execution failed)
+        isSuccess:
+          type: boolean
+          description: Whether the execution was successful
+        validationResult:
+          type: object
+          properties:
+            input:
+              $ref: '#/components/schemas/ResourceValidationResult'
+            output:
+              $ref: '#/components/schemas/ResourceValidationResult'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          description: Execution and validation errors
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationWarning'
+          description: Execution and validation warnings
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExecutionLog'
+          description: Execution logs
+        performance:
+          $ref: '#/components/schemas/EnhancedPerformanceMetrics'
+
+    EnhancedPerformanceMetrics:
+      allOf:
+        - $ref: '#/components/schemas/PerformanceMetrics'
+        - type: object
+          properties:
+            validationTime:
+              type: integer
+              description: Total validation time in milliseconds
+
+    ContactDetail:
+      type: object
+      properties:
+        name:
+          type: string
+        telecom:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactPoint'
+
+    ContactPoint:
+      type: object
+      properties:
+        system:
+          type: string
+          enum: [phone, fax, email, pager, url, sms, other]
+        value:
+          type: string
+        use:
+          type: string
+          enum: [home, work, temp, old, mobile]
+        rank:
+          type: integer
+          minimum: 1
+        period:
+          $ref: '#/components/schemas/Period'
+
+    Period:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+
+    UsageContext:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          $ref: '#/components/schemas/Coding'
+        valueCodeableConcept:
+          $ref: '#/components/schemas/CodeableConcept'
+        valueQuantity:
+          $ref: '#/components/schemas/Quantity'
+        valueRange:
+          $ref: '#/components/schemas/Range'
+        valueReference:
+          $ref: '#/components/schemas/Reference'
+
+    CodeableConcept:
+      type: object
+      properties:
+        coding:
+          type: array
+          items:
+            $ref: '#/components/schemas/Coding'
+        text:
+          type: string
+
+    Coding:
+      type: object
+      properties:
+        system:
+          type: string
+          format: uri
+        version:
+          type: string
+        code:
+          type: string
+        display:
+          type: string
+        userSelected:
+          type: boolean
+
+    Quantity:
+      type: object
+      properties:
+        value:
+          type: number
+        comparator:
+          type: string
+          enum: ['<', '<=', '>=', '>', 'ad']
+        unit:
+          type: string
+        system:
+          type: string
+          format: uri
+        code:
+          type: string
+
+    Range:
+      type: object
+      properties:
+        low:
+          $ref: '#/components/schemas/Quantity'
+        high:
+          $ref: '#/components/schemas/Quantity'
+
+    Reference:
+      type: object
+      properties:
+        reference:
+          type: string
+        type:
+          type: string
+          format: uri
+        identifier:
+          $ref: '#/components/schemas/Identifier'
+        display:
+          type: string
+
+    Identifier:
+      type: object
+      properties:
+        use:
+          type: string
+          enum: [usual, official, temp, secondary, old]
+        type:
+          $ref: '#/components/schemas/CodeableConcept'
+        system:
+          type: string
+          format: uri
+        value:
+          type: string
+        period:
+          $ref: '#/components/schemas/Period'
+        assigner:
+          $ref: '#/components/schemas/Reference'
+
+    StructureDefinitionMapping:
+      type: object
+      required:
+        - identity
+      properties:
+        identity:
+          type: string
+          format: fhir-id
+        uri:
+          type: string
+          format: uri
+        name:
+          type: string
+        comment:
+          type: string
+
+    StructureDefinitionContext:
+      type: object
+      required:
+        - type
+        - expression
+      properties:
+        type:
+          type: string
+          enum: [fhirpath, element, extension]
+        expression:
+          type: string
+
+    StructureDefinitionSnapshot:
+      type: object
+      required:
+        - element
+      properties:
+        element:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementDefinition'
+          minItems: 1
+
+    StructureDefinitionDifferential:
+      type: object
+      required:
+        - element
+      properties:
+        element:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementDefinition'
+          minItems: 1
+
+    ElementDefinition:
+      type: object
+      required:
+        - path
+      properties:
+        id:
+          type: string
+        path:
+          type: string
+        sliceName:
+          type: string
+        sliceIsConstraining:
+          type: boolean
+        label:
+          type: string
+        code:
+          type: array
+          items:
+            $ref: '#/components/schemas/Coding'
+        short:
+          type: string
+        definition:
+          type: string
+        comment:
+          type: string
+        requirements:
+          type: string
+        alias:
+          type: array
+          items:
+            type: string
+        min:
+          type: integer
+          minimum: 0
+        max:
+          type: string
+        type:
+          type: array
+          items:
+            type: object
+            required:
+              - code
+            properties:
+              code:
+                type: string
+                format: fhir-uri
+              profile:
+                type: array
+                items:
+                  type: string
+                  format: fhir-canonical
+              targetProfile:
+                type: array
+                items:
+                  type: string
+                  format: fhir-canonical
+        meaningWhenMissing:
+          type: string
+        fixedString:
+          type: string
+        fixedBoolean:
+          type: boolean
+        fixedInteger:
+          type: integer
+        fixedDecimal:
+          type: number
+        fixedUri:
+          type: string
+          format: uri
+        fixedUrl:
+          type: string
+          format: uri
+        fixedCode:
+          type: string
+        fixedDate:
+          type: string
+          format: date
+        fixedDateTime:
+          type: string
+          format: date-time
+        fixedTime:
+          type: string
+        fixedInstant:
+          type: string
+          format: date-time
+        fixedCodeableConcept:
+          $ref: '#/components/schemas/CodeableConcept'
+        fixedCoding:
+          $ref: '#/components/schemas/Coding'
+        fixedQuantity:
+          $ref: '#/components/schemas/Quantity'
+        fixedPeriod:
+          $ref: '#/components/schemas/Period'
+        fixedRange:
+          $ref: '#/components/schemas/Range'
+        fixedReference:
+          $ref: '#/components/schemas/Reference'
+        mustSupport:
+          type: boolean
+        isModifier:
+          type: boolean
+        isModifierReason:
+          type: string
+        isSummary:
+          type: boolean
+        binding:
+          type: object
+          required:
+            - strength
+          properties:
+            strength:
+              type: string
+              enum: [required, extensible, preferred, example]
+            description:
+              type: string
+            valueSet:
+              type: string
+              format: fhir-canonical
+        constraint:
+          type: array
+          items:
+            type: object
+            required:
+              - key
+              - severity
+              - human
+            properties:
+              key:
+                type: string
+                format: fhir-id
+              requirements:
+                type: string
+              severity:
+                type: string
+                enum: [error, warning]
+              human:
+                type: string
+              expression:
+                type: string
+                format: fhirpath
+              xpath:
+                type: string
+              source:
+                type: string
+                format: fhir-canonical
+
     StructureMap:
       type: object
       description: FHIR StructureMap resource
@@ -1560,11 +2981,13 @@ tags:
   - name: Execution
     description: StructureMap execution operations
   - name: Validation
-    description: FML validation operations
+    description: FML and FHIR resource validation operations
   - name: FHIR Operations
     description: Standard FHIR operations for StructureMap transformations
   - name: StructureMap Management
     description: StructureMap retrieval and management
+  - name: StructureDefinition Management
+    description: StructureDefinition (logical models, profiles) management and validation
   - name: Monitoring
     description: Health checks and metrics
 

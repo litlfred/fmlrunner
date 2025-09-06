@@ -34,6 +34,8 @@ interface CompilationOptions {
   fhirVersion?: 'R4' | 'R5';
   strictMode?: boolean;
   includeDebugInfo?: boolean;
+  validateInput?: boolean;
+  validateOutput?: boolean;
 }
 
 interface ValidationResult {
@@ -43,7 +45,133 @@ interface ValidationResult {
 }
 ```
 
-#### 2.1.2 StructureMapExecutor Interface
+#### 2.1.2 StructureDefinitionManager Interface
+
+```typescript
+interface StructureDefinitionManager {
+  /**
+   * Store a StructureDefinition
+   */
+  store(structureDefinition: StructureDefinition): Promise<string>;
+  
+  /**
+   * Retrieve a StructureDefinition by ID
+   */
+  get(id: string): Promise<StructureDefinition | null>;
+  
+  /**
+   * Retrieve a StructureDefinition by URL
+   */
+  getByUrl(url: string): Promise<StructureDefinition | null>;
+  
+  /**
+   * List all StructureDefinitions
+   */
+  list(options?: ListOptions): Promise<StructureDefinitionInfo[]>;
+  
+  /**
+   * Update a StructureDefinition
+   */
+  update(id: string, structureDefinition: StructureDefinition): Promise<void>;
+  
+  /**
+   * Delete a StructureDefinition
+   */
+  delete(id: string): Promise<void>;
+  
+  /**
+   * Validate a StructureDefinition
+   */
+  validate(structureDefinition: StructureDefinition): ValidationResult;
+}
+
+interface ListOptions {
+  kind?: 'logical' | 'resource' | 'complex-type' | 'primitive-type';
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  name?: string;
+  url?: string;
+  limit?: number;
+  offset?: number;
+}
+
+interface StructureDefinitionInfo {
+  id: string;
+  url: string;
+  name: string;
+  version?: string;
+  status: string;
+  kind: string;
+  description?: string;
+  lastModified?: string;
+}
+```
+
+#### 2.1.3 ResourceValidator Interface
+
+```typescript
+interface ResourceValidator {
+  /**
+   * Validate a FHIR resource against a StructureDefinition
+   */
+  validateResource(
+    resource: any, 
+    structureDefinitionUrl: string, 
+    options?: ValidationOptions
+  ): Promise<ResourceValidationResult>;
+  
+  /**
+   * Validate data against a logical model
+   */
+  validateAgainstLogicalModel(
+    data: any, 
+    logicalModelUrl: string, 
+    options?: ValidationOptions
+  ): Promise<ResourceValidationResult>;
+  
+  /**
+   * Batch validate multiple resources
+   */
+  validateBatch(
+    resources: any[], 
+    structureDefinitionUrl: string, 
+    options?: ValidationOptions
+  ): Promise<ResourceValidationResult[]>;
+}
+
+interface ValidationOptions {
+  mode?: 'strict' | 'non-strict';
+  validateReferences?: boolean;
+  maxErrors?: number;
+  stopOnFirstError?: boolean;
+}
+
+interface ResourceValidationResult {
+  isValid: boolean;
+  errors: ResourceValidationError[];
+  warnings: ResourceValidationWarning[];
+  validationMode: 'strict' | 'non-strict';
+  structureDefinition: string;
+  validatedAt: string;
+}
+
+interface ResourceValidationError {
+  type: string;
+  message: string;
+  path: string;
+  severity: 'error' | 'warning';
+  value?: any;
+  expected?: any;
+}
+
+interface ResourceValidationWarning {
+  type: string;
+  message: string;
+  path: string;
+  severity: 'warning' | 'info';
+}
+```
+
+#### 2.1.4 StructureMapExecutor Interface
 
 ```typescript
 interface StructureMapExecutor {
@@ -51,6 +179,15 @@ interface StructureMapExecutor {
    * Execute StructureMap on input data
    */
   execute(structureMap: StructureMap, sourceData: any, context?: ExecutionContext): Promise<any>;
+  
+  /**
+   * Execute with validation (strict/non-strict modes)
+   */
+  executeWithValidation(
+    structureMap: StructureMap, 
+    sourceData: any, 
+    options: ValidatedExecutionOptions
+  ): Promise<ValidatedExecutionResult>;
   
   /**
    * Execute with custom transformation context
@@ -78,9 +215,37 @@ interface ExecutionResult {
   logs: ExecutionLog[];
   performance: PerformanceMetrics;
 }
+
+interface ValidatedExecutionOptions {
+  mode: 'strict' | 'non-strict';
+  validateInput?: boolean;
+  validateOutput?: boolean;
+  inputStructureDefinition?: string;
+  outputStructureDefinition?: string;
+  stopOnError?: boolean;
+  maxErrors?: number;
+  context?: ExecutionContext;
+}
+
+interface ValidatedExecutionResult {
+  result?: any;
+  isSuccess: boolean;
+  validationResult?: {
+    input?: ResourceValidationResult;
+    output?: ResourceValidationResult;
+  };
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+  logs?: ExecutionLog[];
+  performance?: EnhancedPerformanceMetrics;
+}
+
+interface EnhancedPerformanceMetrics extends PerformanceMetrics {
+  validationTime?: number;
+}
 ```
 
-#### 2.1.3 StructureMapRetriever Interface
+#### 2.1.5 StructureMapRetriever Interface
 
 ```typescript
 interface StructureMapRetriever {
@@ -112,6 +277,70 @@ interface RetrievalOptions {
   cache?: boolean;
 }
 ```
+
+#### 2.1.6 FMLRunner Main Interface
+
+```typescript
+interface FMLRunner {
+  readonly compiler: FMLCompiler;
+  readonly executor: StructureMapExecutor;
+  readonly validator: ResourceValidator;
+  readonly structureDefinitions: StructureDefinitionManager;
+  readonly retriever: StructureMapRetriever;
+  
+  /**
+   * Initialize the FML Runner with configuration
+   */
+  initialize(config?: FMLRunnerConfig): Promise<void>;
+  
+  /**
+   * Shutdown and cleanup resources
+   */
+  shutdown(): Promise<void>;
+}
+
+interface FMLRunnerConfig {
+  cacheSize?: number;
+  timeout?: number;
+  defaultValidationMode?: 'strict' | 'non-strict';
+  directories?: {
+    structureMaps?: string;
+    structureDefinitions?: string;
+  };
+  fhirVersion?: 'R4' | 'R5';
+}
+```
+
+### 2.2 Validation API Requirements (API-002)
+
+**Requirement:** The library SHALL provide comprehensive validation APIs for both strict and non-strict modes.
+
+#### 2.2.1 Validation Mode Support
+
+The library must support two distinct validation modes:
+
+- **Strict Mode**: Fails immediately on validation errors, stopping execution
+- **Non-Strict Mode**: Collects validation warnings but continues execution
+
+#### 2.2.2 Validation Scope
+
+The validation APIs must support:
+
+- FML content validation
+- StructureMap resource validation  
+- StructureDefinition resource validation
+- FHIR resource validation against profiles
+- Data validation against logical models
+- Input/output parameter validation for transformations
+
+#### 2.2.3 Error Reporting
+
+All validation operations must provide:
+
+- Detailed error messages with FHIRPath locations
+- Categorized error types (cardinality, datatype, constraint violations)
+- Severity levels (error, warning, info)
+- Structured error objects for programmatic handling
 
 ### 2.2 Main Library Interface (API-002)
 
