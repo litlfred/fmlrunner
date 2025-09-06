@@ -1,10 +1,12 @@
 import { FmlRunner } from '../src';
+import * as path from 'path';
 
 describe('FmlRunner', () => {
   let runner: FmlRunner;
+  const testDataDir = path.join(__dirname, 'test-data');
 
   beforeEach(() => {
-    runner = new FmlRunner();
+    runner = new FmlRunner({ baseUrl: testDataDir });
   });
 
   describe('compileFml', () => {
@@ -27,16 +29,31 @@ describe('FmlRunner', () => {
   });
 
   describe('executeStructureMap', () => {
-    it('should return not implemented error for now', async () => {
-      const result = await runner.executeStructureMap('test-map', {});
+    it('should execute StructureMap from file', async () => {
+      const inputData = { name: 'John Doe' };
+      const result = await runner.executeStructureMap('test-structure-map.json', inputData);
+      
+      expect(result.success).toBe(true);
+      expect(result.result).toEqual({ fullName: 'John Doe' });
+    });
+
+    it('should return error for non-existent StructureMap', async () => {
+      const result = await runner.executeStructureMap('non-existent.json', {});
       expect(result.success).toBe(false);
-      expect(result.errors).toContain('StructureMap execution not yet implemented');
+      expect(result.errors?.[0]).toContain('StructureMap not found');
     });
   });
 
   describe('getStructureMap', () => {
-    it('should return null for now', async () => {
-      const result = await runner.getStructureMap('test-reference');
+    it('should retrieve StructureMap from file', async () => {
+      const structureMap = await runner.getStructureMap('test-structure-map.json');
+      expect(structureMap).toBeDefined();
+      expect(structureMap?.resourceType).toBe('StructureMap');
+      expect(structureMap?.name).toBe('TestMap');
+    });
+
+    it('should return null for non-existent file', async () => {
+      const result = await runner.getStructureMap('non-existent.json');
       expect(result).toBeNull();
     });
   });
@@ -44,6 +61,13 @@ describe('FmlRunner', () => {
   describe('clearCache', () => {
     it('should clear cache without errors', () => {
       expect(() => runner.clearCache()).not.toThrow();
+    });
+  });
+
+  describe('setBaseDirectory', () => {
+    it('should update base directory', () => {
+      const newDir = '/new/path';
+      expect(() => runner.setBaseDirectory(newDir)).not.toThrow();
     });
   });
 });

@@ -1,4 +1,6 @@
 import { FmlCompiler } from './lib/fml-compiler';
+import { StructureMapRetriever } from './lib/structure-map-retriever';
+import { StructureMapExecutor } from './lib/structure-map-executor';
 import { StructureMap, FmlCompilationResult, ExecutionResult, FmlRunnerOptions } from './types';
 
 /**
@@ -6,16 +8,24 @@ import { StructureMap, FmlCompilationResult, ExecutionResult, FmlRunnerOptions }
  */
 export class FmlRunner {
   private compiler: FmlCompiler;
+  private retriever: StructureMapRetriever;
+  private executor: StructureMapExecutor;
   private options: FmlRunnerOptions;
-  private cache: Map<string, StructureMap> = new Map();
 
   constructor(options: FmlRunnerOptions = {}) {
     this.compiler = new FmlCompiler();
+    this.retriever = new StructureMapRetriever();
+    this.executor = new StructureMapExecutor();
     this.options = {
       cacheEnabled: true,
       timeout: 5000,
       ...options
     };
+
+    // Set base URL for retriever if provided
+    if (options.baseUrl) {
+      this.retriever.setBaseDirectory(options.baseUrl);
+    }
   }
 
   /**
@@ -26,32 +36,63 @@ export class FmlRunner {
   }
 
   /**
-   * Execute StructureMap on input content (placeholder implementation)
+   * Execute StructureMap on input content
    */
-  executeStructureMap(structureMapReference: string, inputContent: any): Promise<ExecutionResult> {
-    // This is a placeholder - real implementation would load the StructureMap and execute it
-    return Promise.resolve({
-      success: false,
-      errors: ['StructureMap execution not yet implemented']
-    });
+  async executeStructureMap(structureMapReference: string, inputContent: any): Promise<ExecutionResult> {
+    try {
+      // Retrieve the StructureMap
+      const structureMap = await this.retriever.getStructureMap(structureMapReference);
+      
+      if (!structureMap) {
+        return {
+          success: false,
+          errors: [`StructureMap not found: ${structureMapReference}`]
+        };
+      }
+
+      // Validate the StructureMap
+      const validation = this.executor.validateStructureMap(structureMap);
+      if (!validation.valid) {
+        return {
+          success: false,
+          errors: [`Invalid StructureMap: ${validation.errors.join(', ')}`]
+        };
+      }
+
+      // Execute the transformation
+      return this.executor.execute(structureMap, inputContent);
+    } catch (error) {
+      return {
+        success: false,
+        errors: [error instanceof Error ? error.message : 'Unknown execution error']
+      };
+    }
   }
 
   /**
-   * Retrieve StructureMap by reference (placeholder implementation) 
+   * Retrieve StructureMap by reference
    */
-  getStructureMap(reference: string): Promise<StructureMap | null> {
-    // This is a placeholder - real implementation would load from file/URL
-    return Promise.resolve(null);
+  async getStructureMap(reference: string): Promise<StructureMap | null> {
+    return this.retriever.getStructureMap(reference);
   }
 
   /**
-   * Clear the internal cache
+   * Clear all internal caches
    */
   clearCache(): void {
-    this.cache.clear();
+    this.retriever.clearCache();
+  }
+
+  /**
+   * Set base directory for StructureMap file loading
+   */
+  setBaseDirectory(directory: string): void {
+    this.retriever.setBaseDirectory(directory);
   }
 }
 
-// Export types
+// Export types and classes
 export * from './types';
 export { FmlCompiler };
+export { StructureMapRetriever };
+export { StructureMapExecutor };
