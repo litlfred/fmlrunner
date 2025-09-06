@@ -315,7 +315,79 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /structure-maps:
+  /StructureMaps/$transform:
+    post:
+      summary: Transform content using StructureMap
+      description: |
+        FHIR $transform operation for transforming content using a StructureMap.
+        This operation follows the FHIR standard operation pattern as defined at:
+        https://build.fhir.org/structuremap-operation-transform.html
+        
+        The operation takes input content and transforms it using the specified StructureMap.
+      operationId: transformContent
+      tags:
+        - FHIR Operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransformRequest'
+            examples:
+              patient_transform:
+                summary: Transform patient data
+                value:
+                  resourceType: "Parameters"
+                  parameter:
+                    - name: "source"
+                      resource:
+                        resourceType: "Patient"
+                        name:
+                          - family: "Doe"
+                            given: ["John"]
+                        birthDate: "1990-01-01"
+                    - name: "map"
+                      valueUri: "http://example.org/fml/PatientTransform"
+      responses:
+        '200':
+          description: Transformation completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformResponse'
+              examples:
+                successful_transform:
+                  summary: Successful transformation result
+                  value:
+                    resourceType: "Parameters"
+                    parameter:
+                      - name: "return"
+                        resource:
+                          resourceType: "Patient"
+                          name:
+                            - family: "Doe"
+                              given: ["John"]
+                          birthDate: "1990-01-01"
+        '400':
+          description: Bad request - invalid input parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Transformation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /StructureMaps:
     get:
       summary: List available StructureMaps
       description: |
@@ -326,49 +398,73 @@ paths:
       tags:
         - StructureMap Management
       parameters:
-        - name: source
-          in: query
-          schema:
-            type: string
-            enum: [directory, url, cache, all]
-            default: all
-          description: Source type for listing
-        - name: path
-          in: query
-          schema:
-            type: string
-          description: Path or URL prefix for filtering
-        - name: limit
+        - name: _count
           in: query
           schema:
             type: integer
             minimum: 1
             maximum: 100
             default: 20
-          description: Maximum number of results to return
-        - name: offset
+          description: Maximum number of results to return (FHIR standard)
+        - name: _offset
           in: query
           schema:
             type: integer
             minimum: 0
             default: 0
-          description: Number of results to skip
+          description: Number of results to skip (FHIR standard)
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: The StructureMap publication date
+        - name: description
+          in: query
+          schema:
+            type: string
+          description: The description of the StructureMap
+        - name: identifier
+          in: query
+          schema:
+            type: string
+          description: External identifier for the StructureMap
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+          description: Intended jurisdiction for the StructureMap
         - name: name
           in: query
           schema:
             type: string
-          description: Filter by StructureMap name (partial match)
+          description: Computationally friendly name of the StructureMap
+        - name: publisher
+          in: query
+          schema:
+            type: string
+          description: Name of the publisher of the StructureMap
         - name: status
           in: query
           schema:
             type: string
             enum: [draft, active, retired, unknown]
-          description: Filter by StructureMap status
+          description: The current status of the StructureMap
+        - name: title
+          in: query
+          schema:
+            type: string
+          description: The human-friendly name of the StructureMap
         - name: url
           in: query
           schema:
             type: string
-          description: Filter by canonical URL (partial match)
+          description: The uri that identifies the StructureMap
+        - name: version
+          in: query
+          schema:
+            type: string
+          description: The business version of the StructureMap
       responses:
         '200':
           description: List of StructureMaps
@@ -484,7 +580,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /structure-maps/{id}:
+  /StructureMaps/{id}:
     get:
       summary: Retrieve StructureMap by ID
       description: |
@@ -1408,6 +1504,77 @@ components:
           type: string
           description: Request correlation ID
 
+    TransformRequest:
+      type: object
+      required:
+        - resourceType
+        - parameter
+      properties:
+        resourceType:
+          type: string
+          enum: [Parameters]
+          description: FHIR Parameters resource type
+        parameter:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                enum: [source, map]
+              resource:
+                type: object
+                description: Source resource to transform (when name=source)
+              valueUri:
+                type: string
+                description: StructureMap URL (when name=map)
+          description: Input parameters for transformation
+      example:
+        resourceType: "Parameters"
+        parameter:
+          - name: "source"
+            resource:
+              resourceType: "Patient"
+              name:
+                - family: "Doe"
+                  given: ["John"]
+              birthDate: "1990-01-01"
+          - name: "map"
+            valueUri: "http://example.org/fml/PatientTransform"
+
+    TransformResponse:
+      type: object
+      required:
+        - resourceType
+        - parameter
+      properties:
+        resourceType:
+          type: string
+          enum: [Parameters]
+          description: FHIR Parameters resource type
+        parameter:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                enum: [return]
+              resource:
+                type: object
+                description: Transformed result resource
+          description: Transformation result
+      example:
+        resourceType: "Parameters"
+        parameter:
+          - name: "return"
+            resource:
+              resourceType: "Patient"
+              name:
+                - family: "Doe"
+                  given: ["John"]
+              birthDate: "1990-01-01"
+
   securitySchemes:
     BearerAuth:
       type: http
@@ -1445,6 +1612,8 @@ tags:
     description: StructureMap execution operations
   - name: Validation
     description: FML validation operations
+  - name: FHIR Operations
+    description: Standard FHIR operations for StructureMap transformations
   - name: StructureMap Management
     description: StructureMap retrieval and management
   - name: Monitoring
