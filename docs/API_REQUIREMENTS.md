@@ -141,25 +141,6 @@ interface FMLRunner {
     sourceData: any, 
     context?: ExecutionContext
   ): Promise<any>;
-  
-  /**
-   * Configuration management
-   */
-  configure(config: FMLRunnerConfig): void;
-  getConfiguration(): FMLRunnerConfig;
-  
-  /**
-   * Cache management
-   */
-  clearCache(): void;
-  getCacheStats(): CacheStatistics;
-  
-  /**
-   * Event handling
-   */
-  on(event: string, listener: Function): void;
-  off(event: string, listener: Function): void;
-  emit(event: string, ...args: any[]): void;
 }
 ```
 
@@ -170,9 +151,8 @@ interface FMLRunner {
 ```typescript
 // Factory pattern
 class FMLRunnerFactory {
-  static create(config?: FMLRunnerConfig): FMLRunner;
-  static createWithDefaults(): FMLRunner;
-  static createForMicroservice(microserviceConfig: MicroserviceConfig): FMLRunner;
+  static create(): FMLRunner;
+  static createForMicroservice(): FMLRunner;
 }
 
 // Builder pattern
@@ -180,8 +160,6 @@ class FMLRunnerBuilder {
   withCompiler(compiler: FMLCompiler): FMLRunnerBuilder;
   withExecutor(executor: StructureMapExecutor): FMLRunnerBuilder;
   withRetriever(retriever: StructureMapRetriever): FMLRunnerBuilder;
-  withCache(cacheConfig: CacheConfig): FMLRunnerBuilder;
-  withEventEmitter(emitter: EventEmitter): FMLRunnerBuilder;
   build(): FMLRunner;
 }
 ```
@@ -541,7 +519,7 @@ paths:
 
 ## 6. Performance and Monitoring API (API-009)
 
-**Requirement:** The API SHALL provide endpoints for performance monitoring and diagnostics.
+**Requirement:** The API SHALL provide endpoints for basic performance monitoring and health checking.
 
 ```yaml
 paths:
@@ -554,7 +532,7 @@ paths:
 
   /api/v1/metrics:
     get:
-      summary: Performance metrics
+      summary: Basic performance metrics
       responses:
         '200':
           description: Performance metrics
@@ -562,17 +540,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetricsResponse'
-
-  /api/v1/cache/stats:
-    get:
-      summary: Cache statistics
-      responses:
-        '200':
-          description: Cache statistics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CacheStatistics'
 ```
 
 ## 7. FHIR Ecosystem Integration (API-010)

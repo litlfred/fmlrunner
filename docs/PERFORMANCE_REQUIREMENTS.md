@@ -40,16 +40,19 @@ This document defines the performance requirements for the FML Runner library, i
 - Excludes StructureMap retrieval time
 - Linear scalability with data size
 
-### 2.3 Cache Performance (PERF-003)
+### 2.3 Internal Caching Performance (PERF-003)
 
-**Requirement:** Cache operations SHALL meet the following performance targets.
+**Requirement:** Internal caching SHALL improve performance without exposing cache management complexity.
 
 | Operation | Target Time | Maximum Time | Notes |
 |-----------|-------------|--------------|-------|
-| Cache Hit | < 1ms | < 5ms | In-memory cache lookup |
+| Cache Hit | < 1ms | < 5ms | In-memory lookup |
 | Cache Miss | N/A | N/A | Falls back to original operation |
-| Cache Store | < 10ms | < 50ms | Store compiled StructureMap |
-| Cache Eviction | < 100ms | < 500ms | LRU eviction process |
+
+**Implementation Notes:**
+- Simple LRU-based caching for compiled StructureMaps
+- No external cache management APIs
+- Automatic cache sizing based on available memory
 
 ### 2.4 StructureMap Retrieval Performance (PERF-004)
 
@@ -59,7 +62,7 @@ This document defines the performance requirements for the FML Runner library, i
 |-------------|-------------|--------------|-------|
 | Local File | < 50ms | < 200ms | File system access |
 | HTTP/HTTPS | < 2s | < 10s | Network retrieval |
-| Cached | < 1ms | < 5ms | Cache hit |
+| Internal Cache | < 1ms | < 5ms | Cache hit |
 
 ## 3. Throughput Requirements
 
@@ -71,7 +74,7 @@ This document defines the performance requirements for the FML Runner library, i
 |----------------|-------------------|-------|
 | FML Compilation | 10 concurrent | CPU-bound operations |
 | StructureMap Execution | 100 concurrent | Mixed I/O and CPU |
-| Cache Operations | 1000 concurrent | Memory-bound operations |
+| Internal Caching | 1000 concurrent | Memory-bound operations |
 | Remote Retrieval | 50 concurrent | Network-bound operations |
 
 ### 3.2 Request Processing Rate (PERF-006)
@@ -81,7 +84,7 @@ This document defines the performance requirements for the FML Runner library, i
 | Endpoint | Target RPS | Maximum Latency | Notes |
 |----------|------------|-----------------|-------|
 | `/compile` | 10 RPS | 5s | Small FML files |
-| `/execute` | 100 RPS | 1s | Cached StructureMaps |
+| `/execute` | 100 RPS | 1s | Using internal cache |
 | `/execute/{id}` | 50 RPS | 3s | Including retrieval |
 | `/structure-maps` | 200 RPS | 500ms | Listing operations |
 
@@ -97,19 +100,19 @@ This document defines the performance requirements for the FML Runner library, i
 
 **Requirement:** The library SHALL operate within the following memory constraints.
 
-| Component | Base Memory | Per Operation | Cache Memory | Notes |
-|-----------|-------------|---------------|--------------|-------|
+| Component | Base Memory | Per Operation | Internal Cache | Notes |
+|-----------|-------------|---------------|----------------|-------|
 | Core Library | < 50 MB | N/A | N/A | Baseline footprint |
 | FML Compilation | N/A | < 10 MB | N/A | Per compilation |
 | StructureMap Execution | N/A | < 5 MB | N/A | Per execution |
-| Cache Storage | N/A | N/A | < 500 MB | Configurable limit |
-| Total Runtime | < 100 MB | N/A | < 500 MB | Normal operations |
+| Internal Cache | N/A | N/A | < 200 MB | Automatic sizing |
+| Total Runtime | < 100 MB | N/A | < 200 MB | Normal operations |
 
 **Memory Management:**
 - Automatic garbage collection optimization
 - Memory leak prevention
-- Configurable memory limits
-- Memory usage monitoring and alerting
+- Automatic memory limits based on available system memory
+- Internal memory usage monitoring
 
 ### 4.2 CPU Usage (PERF-008)
 
@@ -119,7 +122,7 @@ This document defines the performance requirements for the FML Runner library, i
 |-----------|------------|-------------|----------|-------|
 | FML Compilation | 80% | 100% | < 30s | CPU-intensive |
 | StructureMap Execution | 60% | 90% | < 5s | Mixed workload |
-| Cache Operations | 10% | 30% | < 100ms | Memory operations |
+| Internal Caching | 10% | 30% | < 100ms | Memory operations |
 | Idle State | < 5% | 10% | Continuous | Background tasks |
 
 ### 4.3 Network Usage (PERF-009)
@@ -155,12 +158,12 @@ This document defines the performance requirements for the FML Runner library, i
 
 **Resource Scaling:**
 - **CPU scaling**: Linear improvement with additional CPU cores
-- **Memory scaling**: Support for larger cache sizes with additional RAM
-- **Storage scaling**: Efficient use of additional storage for local caches
+- **Memory scaling**: Better performance with additional RAM for internal caching
+- **Storage scaling**: Efficient use of additional storage for local StructureMap storage
 
 **Scaling Efficiency:**
 - 80% efficiency for CPU scaling (1-16 cores)
-- 90% efficiency for memory scaling (cache operations)
+- 90% efficiency for memory scaling (internal cache operations)
 - No degradation with increased storage capacity
 
 ### 5.3 Load Testing Targets (PERF-012)
@@ -192,37 +195,17 @@ This document defines the performance requirements for the FML Runner library, i
   - Graceful handling of overload
   - Quick recovery when load decreases
 
-## 6. Cache Performance Requirements
+## 6. Internal Caching Requirements
 
-### 6.1 Cache Hit Rates (PERF-013)
+### 6.1 Basic Caching Performance (PERF-013)
 
-**Requirement:** The caching system SHALL achieve the following hit rates.
+**Requirement:** Internal caching SHALL improve performance transparently without requiring external management.
 
-| Cache Type | Target Hit Rate | Measurement Period | Notes |
-|------------|-----------------|-------------------|-------|
-| Compilation Cache | > 70% | 1 hour | Repeated compilations |
-| Retrieval Cache | > 80% | 1 hour | Popular StructureMaps |
-| Parse Cache | > 60% | 1 hour | AST caching |
-
-### 6.2 Cache Eviction Performance (PERF-014)
-
-**Requirement:** Cache eviction SHALL not significantly impact performance.
-
-**Eviction Requirements:**
-- Eviction operations complete within 100ms
-- No blocking of cache read operations during eviction
-- LRU eviction algorithm with O(1) complexity
-- Configurable eviction batch sizes
-
-### 6.3 Cache Warming (PERF-015)
-
-**Requirement:** The system SHALL support efficient cache warming strategies.
-
-**Cache Warming Features:**
-- Pre-load commonly used StructureMaps on startup
-- Background cache warming based on usage patterns
-- API endpoints for manual cache warming
-- Minimal impact on normal operations during warming
+**Implementation:**
+- Simple LRU-based caching for compiled StructureMaps
+- Automatic cache sizing based on available memory
+- Target hit rate > 70% for repeated operations
+- No external cache management APIs or endpoints
 
 ## 7. Network Performance Requirements
 
@@ -243,7 +226,7 @@ This document defines the performance requirements for the FML Runner library, i
 **Resilience Features:**
 - Automatic retry with exponential backoff (3 attempts)
 - Circuit breaker for consistently failing endpoints
-- Fallback to cached versions when network fails
+- Fallback to local StructureMaps when network fails
 - Network error categorization and appropriate responses
 
 ## 8. Performance Monitoring Requirements
@@ -256,7 +239,7 @@ This document defines the performance requirements for the FML Runner library, i
 - Response time percentiles (50th, 90th, 95th, 99th)
 - Request rate (requests per second)
 - Error rates by type and endpoint
-- Cache hit/miss rates
+- Internal cache hit/miss rates
 - Memory usage and garbage collection metrics
 - CPU utilization by operation type
 - Network latency and error rates
@@ -268,7 +251,7 @@ This document defines the performance requirements for the FML Runner library, i
 **Alert Conditions:**
 - Response time exceeds maximum targets
 - Error rate exceeds thresholds
-- Cache hit rate falls below targets
+- Internal cache hit rate falls below targets
 - Memory usage exceeds limits
 - CPU usage sustained above 90%
 

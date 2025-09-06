@@ -59,7 +59,7 @@ The FML Runner is designed as a Node.js library for compiling FHIR Mapping Langu
 | PERF-005-006 | Throughput | **High** | Performance |
 | PERF-007-009 | Resource Utilization | **High** | Performance |
 | PERF-010-012 | Scalability | **Medium** | Scalability |
-| PERF-013-015 | Cache Performance | **High** | Performance |
+| PERF-013 | Internal Caching | **Medium** | Performance |
 | PERF-016-017 | Network Performance | **Medium** | Network |
 | PERF-018-020 | Monitoring | **Medium** | Operations |
 | PERF-021-022 | Optimization | **High** | Performance |
@@ -108,7 +108,7 @@ The FML Runner is designed as a Node.js library for compiling FHIR Mapping Langu
 - ARCH-009-010: Caching
 - ARCH-017-018: Security Architecture
 - PERF-001-009: Core Performance
-- PERF-013-015: Cache Performance
+- PERF-013: Internal Caching
 - DEPLOY-004-006: Infrastructure
 - DEPLOY-007-009: Container Support
 
@@ -135,14 +135,14 @@ The FML Runner is designed as a Node.js library for compiling FHIR Mapping Langu
 - [ ] Compile FML files to valid FHIR StructureMaps
 - [ ] Execute StructureMaps on healthcare data
 - [ ] Retrieve StructureMaps from multiple sources
-- [ ] Cache compiled StructureMaps for performance
+- [ ] Use simple internal caching for performance
 - [ ] Handle errors gracefully with detailed messages
 
 ### Performance Success
 - [ ] Compile 10KB FML files in < 100ms
 - [ ] Execute transformations on 1KB data in < 10ms
 - [ ] Support 100 concurrent executions
-- [ ] Achieve 80%+ cache hit rates
+- [ ] Achieve good internal cache hit rates
 - [ ] Scale linearly with additional instances
 
 ### Integration Success
@@ -170,8 +170,8 @@ The FML Runner is designed as a Node.js library for compiling FHIR Mapping Langu
   - *Mitigation*: Use official FHIR schemas, validation testing
 
 ### Medium Risk
-- **Caching Strategy**: Complex cache invalidation scenarios
-  - *Mitigation*: Simple LRU strategy initially, expand later
+- **Internal Caching**: Simple caching strategy without external management
+  - *Mitigation*: Use proven LRU algorithms, automatic memory management
 - **Error Handling**: Comprehensive error scenarios
   - *Mitigation*: Systematic error categorization, unit testing
 - **Security Requirements**: Multiple authentication methods
@@ -194,7 +194,7 @@ The FML Runner is designed as a Node.js library for compiling FHIR Mapping Langu
 - FML grammar definition and parser
 - FHIR resource validation library
 - Transformation engine implementation
-- Cache management system
+- Simple internal caching system
 
 ## Conclusion
 

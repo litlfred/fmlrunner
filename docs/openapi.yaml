@@ -5,11 +5,11 @@ info:
     FHIR Mapping Language (FML) Runner API for compiling FML content to StructureMaps 
     and executing transformations on healthcare data.
     
-    This API provides functionality for:
+    This API provides core functionality for:
     - Compiling FML files to FHIR StructureMap resources
     - Executing StructureMaps on source data to perform transformations
-    - Managing and retrieving StructureMaps from various sources
-    - Performance monitoring and health checking
+    - Managing and retrieving StructureMaps with FHIR-compliant CRUD operations
+    - Basic health checking and performance monitoring
   version: 1.0.0
   contact:
     name: FML Runner Support
@@ -771,59 +771,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MetricsResponse'
 
-  /cache/stats:
-    get:
-      summary: Cache statistics
-      description: |
-        Returns detailed cache performance statistics.
-        Used for cache optimization and performance tuning.
-      operationId: getCacheStats
-      tags:
-        - Cache Management
-      responses:
-        '200':
-          description: Cache statistics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CacheStatistics'
 
-  /cache/clear:
-    post:
-      summary: Clear cache
-      description: |
-        Clears specified cache components or all caches.
-        Used for cache management and troubleshooting.
-      operationId: clearCache
-      tags:
-        - Cache Management
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                cacheType:
-                  type: string
-                  enum: [all, compilation, retrieval, parse]
-                  default: all
-                  description: Type of cache to clear
-      responses:
-        '200':
-          description: Cache cleared successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Cache cleared successfully"
-                  clearedTypes:
-                    type: array
-                    items:
-                      type: string
-                    example: ["compilation", "retrieval"]
 
 components:
   schemas:
@@ -1420,41 +1368,21 @@ components:
             averageExecutionTime:
               type: number
         cache:
-          $ref: '#/components/schemas/CacheStatistics'
+          type: object
+          properties:
+            hits:
+              type: integer
+              description: Number of cache hits
+            misses:
+              type: integer
+              description: Number of cache misses
+            hitRate:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: Cache hit rate (0-1)
 
-    CacheStatistics:
-      type: object
-      properties:
-        compilation:
-          $ref: '#/components/schemas/CacheStats'
-        retrieval:
-          $ref: '#/components/schemas/CacheStats'
-        parse:
-          $ref: '#/components/schemas/CacheStats'
 
-    CacheStats:
-      type: object
-      properties:
-        hits:
-          type: integer
-          description: Number of cache hits
-        misses:
-          type: integer
-          description: Number of cache misses
-        hitRate:
-          type: number
-          minimum: 0
-          maximum: 1
-          description: Cache hit rate (0-1)
-        size:
-          type: integer
-          description: Current cache size
-        maxSize:
-          type: integer
-          description: Maximum cache size
-        evictions:
-          type: integer
-          description: Number of evictions
 
     ErrorResponse:
       type: object
@@ -1519,8 +1447,6 @@ tags:
     description: FML validation operations
   - name: StructureMap Management
     description: StructureMap retrieval and management
-  - name: Cache Management
-    description: Cache operations and statistics
   - name: Monitoring
     description: Health checks and metrics
 
