@@ -296,6 +296,161 @@ describe('FmlRunnerApi', () => {
     });
   });
 
+  describe('StructureDefinition endpoints', () => {
+    describe('GET /api/v1/StructureDefinitions', () => {
+      it('should return empty bundle initially', async () => {
+        const response = await request(app)
+          .get('/api/v1/StructureDefinitions')
+          .expect(200);
+
+        expect(response.body.resourceType).toBe('Bundle');
+        expect(response.body.type).toBe('searchset');
+        expect(response.body.total).toBe(0);
+      });
+    });
+
+    describe('POST /api/v1/StructureDefinitions', () => {
+      it('should create new StructureDefinition', async () => {
+        const structureDefinition = {
+          resourceType: 'StructureDefinition',
+          name: 'TestProfile',
+          status: 'draft',
+          kind: 'logical',
+          type: 'TestResource',
+          snapshot: {
+            element: [
+              {
+                path: 'TestResource',
+                min: 1,
+                max: '1'
+              }
+            ]
+          }
+        };
+
+        const response = await request(app)
+          .post('/api/v1/StructureDefinitions')
+          .send(structureDefinition)
+          .expect(201);
+
+        expect(response.body.resourceType).toBe('StructureDefinition');
+        expect(response.body.name).toBe('TestProfile');
+        expect(response.body.id).toBeDefined();
+      });
+    });
+
+    describe('GET /api/v1/StructureDefinitions/:id', () => {
+      it('should return 404 for non-existent StructureDefinition', async () => {
+        const response = await request(app)
+          .get('/api/v1/StructureDefinitions/non-existent')
+          .expect(404);
+
+        expect(response.body.resourceType).toBe('OperationOutcome');
+      });
+    });
+  });
+
+  describe('Validation endpoints', () => {
+    beforeEach(async () => {
+      // Register a StructureDefinition for testing
+      const structureDefinition = {
+        resourceType: 'StructureDefinition',
+        url: 'http://example.org/StructureDefinition/TestPatient',
+        name: 'TestPatient',
+        status: 'active',
+        kind: 'resource',
+        type: 'Patient',
+        snapshot: {
+          element: [
+            {
+              path: 'Patient',
+              min: 1,
+              max: '1'
+            },
+            {
+              path: 'Patient.name',
+              min: 1,
+              max: '*',
+              type: [{ code: 'string' }]
+            }
+          ]
+        }
+      };
+
+      await request(app)
+        .post('/api/v1/StructureDefinitions')
+        .send(structureDefinition);
+    });
+
+    describe('POST /api/v1/validate', () => {
+      it('should validate valid resource', async () => {
+        const requestBody = {
+          resource: {
+            resourceType: 'Patient',
+            name: 'John Doe'
+          },
+          profile: 'http://example.org/StructureDefinition/TestPatient'
+        };
+
+        const response = await request(app)
+          .post('/api/v1/validate')
+          .send(requestBody)
+          .expect(200);
+
+        expect(response.body.resourceType).toBe('OperationOutcome');
+        expect(response.body.issue).toBeDefined();
+      });
+
+      it('should return validation errors for invalid resource', async () => {
+        const requestBody = {
+          resource: {
+            resourceType: 'Patient'
+            // Missing required name field
+          },
+          profile: 'http://example.org/StructureDefinition/TestPatient'
+        };
+
+        const response = await request(app)
+          .post('/api/v1/validate')
+          .send(requestBody)
+          .expect(400);
+
+        expect(response.body.resourceType).toBe('OperationOutcome');
+        expect(response.body.issue.length).toBeGreaterThan(0);
+        expect(response.body.issue[0].severity).toBe('error');
+      });
+
+      it('should return 400 for missing parameters', async () => {
+        const response = await request(app)
+          .post('/api/v1/validate')
+          .send({ resource: {} })
+          .expect(400);
+
+        expect(response.body.resourceType).toBe('OperationOutcome');
+        expect(response.body.issue[0].diagnostics).toContain('resource and profile are required');
+      });
+    });
+
+    describe('POST /api/v1/execute-with-validation', () => {
+      it('should execute with validation (basic test)', async () => {
+        const requestBody = {
+          structureMapReference: 'test-structure-map.json',
+          inputContent: { name: 'John Doe' },
+          options: {
+            strictMode: false
+          }
+        };
+
+        const response = await request(app)
+          .post('/api/v1/execute-with-validation')
+          .send(requestBody)
+          .expect(200);
+
+        expect(response.body.result).toBeDefined();
+      });
+    });
+  });
+
   describe('GET /api/v1/health', () => {
     it('should return health status', async () => {
       const response = await request(app)

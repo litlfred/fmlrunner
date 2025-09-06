@@ -36,6 +36,13 @@ export class FmlRunnerApi {
     apiRouter.post('/execute', this.executeStructureMap.bind(this));
     apiRouter.get('/structuremap/:reference', this.getStructureMap.bind(this));
 
+    // FHIR-compliant StructureDefinition CRUD endpoints
+    apiRouter.get('/StructureDefinitions', this.searchStructureDefinitions.bind(this));
+    apiRouter.get('/StructureDefinitions/:id', this.getStructureDefinitionById.bind(this));
+    apiRouter.post('/StructureDefinitions', this.createStructureDefinition.bind(this));
+    apiRouter.put('/StructureDefinitions/:id', this.updateStructureDefinition.bind(this));
+    apiRouter.delete('/StructureDefinitions/:id', this.deleteStructureDefinition.bind(this));
+
     // FHIR $transform operation (need to register before :id route)
     apiRouter.post('/StructureMaps/:operation(\\$transform)', this.transformOperation.bind(this));
 
@@ -45,6 +52,12 @@ export class FmlRunnerApi {
     apiRouter.post('/StructureMaps', this.createStructureMap.bind(this));
     apiRouter.put('/StructureMaps/:id', this.updateStructureMap.bind(this));
     apiRouter.delete('/StructureMaps/:id', this.deleteStructureMap.bind(this));
+
+    // Enhanced execution with validation
+    apiRouter.post('/execute-with-validation', this.executeWithValidation.bind(this));
+
+    // Validation endpoint
+    apiRouter.post('/validate', this.validateResource.bind(this));
 
     // Health check endpoint
     apiRouter.get('/health', this.healthCheck.bind(this));
@@ -378,6 +391,307 @@ export class FmlRunnerApi {
             diagnostics: result.errors?.join(', ') || 'Transformation failed'
           }]
         });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Search StructureDefinitions with FHIR search parameters
+   */
+  private async searchStructureDefinitions(req: Request, res: Response): Promise<void> {
+    try {
+      // FHIR search parameters - basic implementation
+      const { name, status, kind, type, _count = '20', _offset = '0' } = req.query;
+      
+      // Get registered StructureDefinitions from validation service
+      const validationService = this.fmlRunner.getValidationService();
+      const structureDefinitions = validationService ? validationService.getStructureDefinitions() : [];
+
+      // Filter based on search parameters (basic implementation)
+      let filteredDefinitions = structureDefinitions;
+      
+      if (name) {
+        filteredDefinitions = filteredDefinitions.filter(sd => 
+          sd.name?.toLowerCase().includes((name as string).toLowerCase())
+        );
+      }
+      
+      if (status) {
+        filteredDefinitions = filteredDefinitions.filter(sd => sd.status === status);
+      }
+
+      const bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: filteredDefinitions.length,
+        entry: filteredDefinitions.map(sd => ({
+          resource: sd
+        }))
+      };
+
+      res.json(bundle);
+    } catch (error) {
+      res.status(500).json({
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Get StructureDefinition by ID
+   */
+  private async getStructureDefinitionById(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      // This would need a proper storage implementation
+      res.status(404).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'not-found',
+          diagnostics: `StructureDefinition with id '${id}' not found`
+        }]
+      });
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Create new StructureDefinition
+   */
+  private async createStructureDefinition(req: Request, res: Response): Promise<void> {
+    try {
+      const structureDefinition = req.body;
+      
+      // Basic validation
+      if (!structureDefinition || structureDefinition.resourceType !== 'StructureDefinition') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a valid StructureDefinition resource'
+          }]
+        });
+        return;
+      }
+
+      // Assign ID if not present
+      if (!structureDefinition.id) {
+        structureDefinition.id = 'sd-' + Date.now();
+      }
+
+      // Register with validation service
+      const validationService = this.fmlRunner.getValidationService();
+      if (validationService) {
+        validationService.registerStructureDefinition(structureDefinition);
+      }
+
+      res.status(201).json(structureDefinition);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Update StructureDefinition
+   */
+  private async updateStructureDefinition(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const structureDefinition = req.body;
+      
+      // Basic validation
+      if (!structureDefinition || structureDefinition.resourceType !== 'StructureDefinition') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a valid StructureDefinition resource'
+          }]
+        });
+        return;
+      }
+
+      // Ensure ID matches
+      structureDefinition.id = id;
+
+      // Register with validation service
+      const validationService = this.fmlRunner.getValidationService();
+      if (validationService) {
+        validationService.registerStructureDefinition(structureDefinition);
+      }
+
+      res.json(structureDefinition);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Delete StructureDefinition
+   */
+  private async deleteStructureDefinition(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      // TODO: Remove from validation service
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Execute StructureMap with validation
+   */
+  private async executeWithValidation(req: Request, res: Response): Promise<void> {
+    try {
+      const { structureMapReference, inputContent, options } = req.body;
+
+      if (!structureMapReference || !inputContent) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'structureMapReference and inputContent are required'
+          }]
+        });
+        return;
+      }
+
+      const result = await this.fmlRunner.executeStructureMapWithValidation(
+        structureMapReference, 
+        inputContent, 
+        options
+      );
+
+      if (result.success) {
+        res.json({ 
+          result: result.result,
+          validation: result.validation
+        });
+      } else {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'processing',
+            diagnostics: result.errors?.join(', ') || 'Execution failed'
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Validate a resource against a StructureDefinition
+   */
+  private async validateResource(req: Request, res: Response): Promise<void> {
+    try {
+      const { resource, profile } = req.body;
+
+      if (!resource || !profile) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Both resource and profile are required'
+          }]
+        });
+        return;
+      }
+
+      const validationService = this.fmlRunner.getValidationService();
+      if (!validationService) {
+        res.status(500).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'not-supported',
+            diagnostics: 'Validation service not available'
+          }]
+        });
+        return;
+      }
+
+      const validationResult = validationService.validate(resource, profile);
+
+      const operationOutcome = {
+        resourceType: 'OperationOutcome',
+        issue: [
+          ...validationResult.errors.map(error => ({
+            severity: 'error' as const,
+            code: 'invariant' as const,
+            diagnostics: error.message,
+            location: [error.path]
+          })),
+          ...validationResult.warnings.map(warning => ({
+            severity: 'warning' as const,
+            code: 'informational' as const,
+            diagnostics: warning.message,
+            location: [warning.path]
+          }))
+        ]
+      };
+
+      if (validationResult.valid) {
+        res.json(operationOutcome);
+      } else {
+        res.status(400).json(operationOutcome);
       }
     } catch (error) {
       res.status(500).json({

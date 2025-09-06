@@ -1,14 +1,20 @@
-import { StructureMap, ExecutionResult } from '../types';
+import { StructureMap, ExecutionResult, ExecutionOptions, EnhancedExecutionResult } from '../types';
+import { ValidationService } from './validation-service';
 
 /**
  * StructureMap execution engine - executes StructureMaps on input data
  */
 export class StructureMapExecutor {
-  
+  private validationService: ValidationService;
+
+  constructor() {
+    this.validationService = new ValidationService();
+  }
+
   /**
-   * Execute a StructureMap on input content
+   * Execute a StructureMap on input content with optional validation
    */
-  execute(structureMap: StructureMap, inputContent: any): ExecutionResult {
+  execute(structureMap: StructureMap, inputContent: any, options?: ExecutionOptions): EnhancedExecutionResult {
     try {
       // Basic validation
       if (!structureMap) {
@@ -25,20 +31,59 @@ export class StructureMapExecutor {
         };
       }
 
+      const result: EnhancedExecutionResult = {
+        success: true,
+        result: undefined,
+        validation: {}
+      };
+
+      // Validate input if requested
+      if (options?.validateInput && options?.inputProfile) {
+        const inputValidation = this.validationService.validate(inputContent, options.inputProfile);
+        result.validation!.input = inputValidation;
+
+        if (!inputValidation.valid && options?.strictMode) {
+          return {
+            success: false,
+            errors: [`Input validation failed: ${inputValidation.errors.map(e => e.message).join(', ')}`],
+            validation: result.validation
+          };
+        }
+      }
+
       // Execute the main group
       const mainGroup = structureMap.group.find(g => g.name === 'main') || structureMap.group[0];
-      const result = this.executeGroup(mainGroup, inputContent);
+      const transformResult = this.executeGroup(mainGroup, inputContent);
+      result.result = transformResult;
 
-      return {
-        success: true,
-        result
-      };
+      // Validate output if requested
+      if (options?.validateOutput && options?.outputProfile) {
+        const outputValidation = this.validationService.validate(transformResult, options.outputProfile);
+        result.validation!.output = outputValidation;
+
+        if (!outputValidation.valid && options?.strictMode) {
+          return {
+            success: false,
+            errors: [`Output validation failed: ${outputValidation.errors.map(e => e.message).join(', ')}`],
+            validation: result.validation
+          };
+        }
+      }
+
+      return result;
     } catch (error) {
       return {
         success: false,
         errors: [error instanceof Error ? error.message : 'Unknown execution error']
       };
     }
+  }
+
+  /**
+   * Get the validation service for registering StructureDefinitions
+   */
+  getValidationService(): ValidationService {
+    return this.validationService;
   }
 
   /**

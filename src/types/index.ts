@@ -79,4 +79,94 @@ export interface FmlRunnerOptions {
   baseUrl?: string;
   cacheEnabled?: boolean;
   timeout?: number;
+  strictMode?: boolean; // New: Enable strict validation mode
+}
+
+/**
+ * FHIR StructureDefinition for logical models and validation
+ */
+export interface StructureDefinition {
+  resourceType: 'StructureDefinition';
+  id?: string;
+  url?: string;
+  name?: string;
+  title?: string;
+  status: 'draft' | 'active' | 'retired' | 'unknown';
+  kind: 'primitive-type' | 'complex-type' | 'resource' | 'logical';
+  abstract?: boolean;
+  type: string;
+  baseDefinition?: string;
+  derivation?: 'specialization' | 'constraint';
+  snapshot?: StructureDefinitionSnapshot;
+  differential?: StructureDefinitionDifferential;
+}
+
+export interface StructureDefinitionSnapshot {
+  element: ElementDefinition[];
+}
+
+export interface StructureDefinitionDifferential {
+  element: ElementDefinition[];
+}
+
+export interface ElementDefinition {
+  id?: string;
+  path: string;
+  sliceName?: string;
+  min?: number;
+  max?: string;
+  type?: ElementDefinitionType[];
+  binding?: ElementDefinitionBinding;
+}
+
+export interface ElementDefinitionType {
+  code: string;
+  profile?: string[];
+}
+
+export interface ElementDefinitionBinding {
+  strength?: 'required' | 'extensible' | 'preferred' | 'example';
+  valueSet?: string;
+}
+
+/**
+ * Validation result
+ */
+export interface ValidationResult {
+  valid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+}
+
+export interface ValidationError {
+  path: string;
+  message: string;
+  severity: 'error';
+}
+
+export interface ValidationWarning {
+  path: string;
+  message: string;
+  severity: 'warning';
+}
+
+/**
+ * Enhanced execution options with validation
+ */
+export interface ExecutionOptions {
+  strictMode?: boolean;
+  validateInput?: boolean;
+  validateOutput?: boolean;
+  inputProfile?: string;
+  outputProfile?: string;
+}
+
+/**
+ * Enhanced execution result with validation details
+ */
+export interface EnhancedExecutionResult extends ExecutionResult {
+  validation?: {
+    input?: ValidationResult;
+    output?: ValidationResult;
+  };
 }

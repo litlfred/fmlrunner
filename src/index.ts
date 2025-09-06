@@ -1,7 +1,16 @@
 import { FmlCompiler } from './lib/fml-compiler';
 import { StructureMapRetriever } from './lib/structure-map-retriever';
 import { StructureMapExecutor } from './lib/structure-map-executor';
-import { StructureMap, FmlCompilationResult, ExecutionResult, FmlRunnerOptions } from './types';
+import { ValidationService } from './lib/validation-service';
+import { 
+  StructureMap, 
+  FmlCompilationResult, 
+  ExecutionResult, 
+  EnhancedExecutionResult,
+  ExecutionOptions,
+  FmlRunnerOptions,
+  StructureDefinition 
+} from './types';
 
 /**
  * Main FmlRunner class providing FML compilation and StructureMap execution
@@ -19,6 +28,7 @@ export class FmlRunner {
     this.options = {
       cacheEnabled: true,
       timeout: 5000,
+      strictMode: false,
       ...options
     };
 
@@ -70,6 +80,64 @@ export class FmlRunner {
   }
 
   /**
+   * Execute StructureMap with validation support
+   */
+  async executeStructureMapWithValidation(
+    structureMapReference: string, 
+    inputContent: any,
+    options?: ExecutionOptions
+  ): Promise<EnhancedExecutionResult> {
+    try {
+      // Retrieve the StructureMap
+      const structureMap = await this.retriever.getStructureMap(structureMapReference);
+      
+      if (!structureMap) {
+        return {
+          success: false,
+          errors: [`StructureMap not found: ${structureMapReference}`]
+        };
+      }
+
+      // Validate the StructureMap
+      const validation = this.executor.validateStructureMap(structureMap);
+      if (!validation.valid) {
+        return {
+          success: false,
+          errors: [`Invalid StructureMap: ${validation.errors.join(', ')}`]
+        };
+      }
+
+      // Execute the transformation with validation
+      const mergedOptions = {
+        strictMode: this.options.strictMode,
+        ...options
+      };
+      
+      return this.executor.execute(structureMap, inputContent, mergedOptions);
+    } catch (error) {
+      return {
+        success: false,
+        errors: [error instanceof Error ? error.message : 'Unknown execution error']
+      };
+    }
+  }
+
+  /**
+   * Register a StructureDefinition for validation
+   */
+  registerStructureDefinition(structureDefinition: StructureDefinition): void {
+    const validationService = this.executor.getValidationService();
+    validationService.registerStructureDefinition(structureDefinition);
+  }
+
+  /**
+   * Get the validation service
+   */
+  getValidationService(): ValidationService | null {
+    return this.executor.getValidationService();
+  }
+
+  /**
    * Retrieve StructureMap by reference
    */
   async getStructureMap(reference: string): Promise<StructureMap | null> {
@@ -96,4 +164,5 @@ export * from './types';
 export { FmlCompiler } from './lib/fml-compiler';
 export { StructureMapRetriever } from './lib/structure-map-retriever';
 export { StructureMapExecutor } from './lib/structure-map-executor';
+export { ValidationService } from './lib/validation-service';
 export { FmlRunnerApi } from './api/server';
