@@ -1,0 +1,973 @@
+openapi: 3.0.3
+info:
+  title: FML Runner API
+  description: |
+    A comprehensive REST API for compiling and executing FHIR Mapping Language (FML) files 
+    to transform healthcare data using FHIR StructureMaps, with advanced validation capabilities.
+    
+    ## Features
+    - FML compilation to FHIR StructureMap resources
+    - StructureMap execution with validation support
+    - FHIR-compliant CRUD operations for StructureMaps and StructureDefinitions
+    - Standard FHIR $transform operation
+    - Resource validation against logical models and profiles
+    - Search capabilities with FHIR search parameters
+    
+  version: 0.1.0
+  contact:
+    name: FML Runner Support
+    url: https://github.com/litlfred/fmlrunner
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://api.example.org/fml/v1
+    description: Production server
+
+tags:
+  - name: FML Compilation
+    description: Compile FHIR Mapping Language to StructureMaps
+  - name: StructureMap Execution
+    description: Execute StructureMap transformations
+  - name: StructureMaps
+    description: FHIR-compliant StructureMap CRUD operations
+  - name: StructureDefinitions
+    description: Logical model and profile management
+  - name: Validation
+    description: Resource validation against profiles
+  - name: Health
+    description: System health and monitoring
+
+paths:
+  /compile:
+    post:
+      tags: [FML Compilation]
+      summary: Compile FML content to StructureMap
+      description: Transforms FHIR Mapping Language content into a valid FHIR StructureMap JSON resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fmlContent]
+              properties:
+                fmlContent:
+                  type: string
+                  description: FHIR Mapping Language content to compile
+                  example: |
+                    map "http://example.org/StructureMap/Patient" = "PatientTransform"
+                    
+                    group main(source src, target tgt) {
+                      src.name -> tgt.fullName;
+                      src.active -> tgt.isActive;
+                    }
+      responses:
+        '200':
+          description: Successfully compiled StructureMap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMap'
+        '400':
+          description: Compilation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /execute:
+    post:
+      tags: [StructureMap Execution]
+      summary: Execute StructureMap transformation
+      description: Executes a StructureMap on input content to produce transformed output
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [structureMapReference, inputContent]
+              properties:
+                structureMapReference:
+                  type: string
+                  description: Reference to StructureMap (file path or URL)
+                  example: "patient-transform.json"
+                inputContent:
+                  type: object
+                  description: Input data to transform
+                  example:
+                    name: "John Doe"
+                    active: true
+      responses:
+        '200':
+          description: Successfully executed transformation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    description: Transformed output data
+        '400':
+          description: Execution failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /execute-with-validation:
+    post:
+      tags: [StructureMap Execution, Validation]
+      summary: Execute StructureMap with validation
+      description: Executes a StructureMap with optional input/output validation against StructureDefinitions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [structureMapReference, inputContent]
+              properties:
+                structureMapReference:
+                  type: string
+                  description: Reference to StructureMap
+                inputContent:
+                  type: object
+                  description: Input data to transform
+                options:
+                  $ref: '#/components/schemas/ExecutionOptions'
+      responses:
+        '200':
+          description: Successfully executed with validation details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    description: Transformed output data
+                  validation:
+                    $ref: '#/components/schemas/ValidationDetails'
+        '400':
+          description: Execution or validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+  /validate:
+    post:
+      tags: [Validation]
+      summary: Validate resource against StructureDefinition
+      description: Validates a FHIR resource against a specified StructureDefinition profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resource, profile]
+              properties:
+                resource:
+                  type: object
+                  description: FHIR resource to validate
+                  example:
+                    resourceType: "Patient"
+                    name: "John Doe"
+                profile:
+                  type: string
+                  description: StructureDefinition URL or name
+                  example: "http://example.org/StructureDefinition/Patient"
+      responses:
+        '200':
+          description: Validation completed (may contain warnings)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+        '400':
+          description: Validation failed with errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+  /StructureMaps:
+    get:
+      tags: [StructureMaps]
+      summary: Search StructureMaps
+      description: Search for StructureMaps using FHIR search parameters
+      parameters:
+        - name: name
+          in: query
+          description: Search by StructureMap name
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            type: string
+            enum: [draft, active, retired, unknown]
+        - name: url
+          in: query
+          description: Search by canonical URL
+          schema:
+            type: string
+        - name: _count
+          in: query
+          description: Number of results to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: _offset
+          in: query
+          description: Starting position for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bundle'
+
+    post:
+      tags: [StructureMaps]
+      summary: Create new StructureMap
+      description: Creates a new StructureMap resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StructureMap'
+      responses:
+        '201':
+          description: StructureMap created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMap'
+        '400':
+          description: Invalid StructureMap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+  /StructureMaps/{id}:
+    get:
+      tags: [StructureMaps]
+      summary: Get StructureMap by ID
+      description: Retrieves a specific StructureMap by its ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: StructureMap ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: StructureMap found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMap'
+        '404':
+          description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+    put:
+      tags: [StructureMaps]
+      summary: Update StructureMap
+      description: Updates an existing StructureMap or creates it if it doesn't exist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: StructureMap ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StructureMap'
+      responses:
+        '200':
+          description: StructureMap updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMap'
+        '400':
+          description: Invalid StructureMap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+    delete:
+      tags: [StructureMaps]
+      summary: Delete StructureMap
+      description: Deletes a StructureMap by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: StructureMap ID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: StructureMap deleted successfully
+        '404':
+          description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+  /StructureMaps/$transform:
+    post:
+      tags: [StructureMaps]
+      summary: FHIR $transform operation
+      description: |
+        Standard FHIR operation for transforming content using a StructureMap.
+        Follows the specification at https://build.fhir.org/structuremap-operation-transform.html
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Parameters'
+            example:
+              resourceType: "Parameters"
+              parameter:
+                - name: "source"
+                  resource:
+                    name: "John Doe"
+                    active: true
+                - name: "map"
+                  valueString: "patient-transform.json"
+      responses:
+        '200':
+          description: Transformation completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Parameters'
+        '400':
+          description: Transformation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+  /StructureDefinitions:
+    get:
+      tags: [StructureDefinitions]
+      summary: Search StructureDefinitions
+      description: Search for StructureDefinitions (logical models, profiles)
+      parameters:
+        - name: name
+          in: query
+          description: Search by name
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            type: string
+            enum: [draft, active, retired, unknown]
+        - name: kind
+          in: query
+          description: Filter by kind
+          schema:
+            type: string
+            enum: [primitive-type, complex-type, resource, logical]
+        - name: type
+          in: query
+          description: Filter by type
+          schema:
+            type: string
+        - name: _count
+          in: query
+          description: Number of results to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: _offset
+          in: query
+          description: Starting position for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bundle'
+
+    post:
+      tags: [StructureDefinitions]
+      summary: Create new StructureDefinition
+      description: Registers a new StructureDefinition for validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StructureDefinition'
+      responses:
+        '201':
+          description: StructureDefinition created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureDefinition'
+        '400':
+          description: Invalid StructureDefinition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+  /StructureDefinitions/{id}:
+    get:
+      tags: [StructureDefinitions]
+      summary: Get StructureDefinition by ID
+      description: Retrieves a specific StructureDefinition by its ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: StructureDefinition ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: StructureDefinition found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureDefinition'
+        '404':
+          description: StructureDefinition not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+    put:
+      tags: [StructureDefinitions]
+      summary: Update StructureDefinition
+      description: Updates an existing StructureDefinition
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: StructureDefinition ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StructureDefinition'
+      responses:
+        '200':
+          description: StructureDefinition updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureDefinition'
+        '400':
+          description: Invalid StructureDefinition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+    delete:
+      tags: [StructureDefinitions]
+      summary: Delete StructureDefinition
+      description: Removes a StructureDefinition from the validation registry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: StructureDefinition ID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: StructureDefinition deleted successfully
+        '404':
+          description: StructureDefinition not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
+  /structuremap/{reference}:
+    get:
+      tags: [StructureMaps]
+      summary: Retrieve StructureMap by reference (legacy)
+      description: Legacy endpoint - retrieves a StructureMap by file path or URL reference
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          description: StructureMap reference (file path or URL)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: StructureMap found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMap'
+        '404':
+          description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns the health status of the service
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-15T10:30:00.000Z"
+                  version:
+                    type: string
+                    example: "0.1.0"
+
+components:
+  schemas:
+    StructureMap:
+      type: object
+      required: [resourceType, status, group]
+      properties:
+        resourceType:
+          type: string
+          enum: [StructureMap]
+        id:
+          type: string
+          description: Logical ID of the resource
+        url:
+          type: string
+          description: Canonical URL for the StructureMap
+        name:
+          type: string
+          description: Name for the StructureMap
+        title:
+          type: string
+          description: Human-readable title
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+          description: Publication status
+        experimental:
+          type: boolean
+          description: For testing purposes
+        description:
+          type: string
+          description: Natural language description
+        group:
+          type: array
+          description: Named groups within the StructureMap
+          items:
+            $ref: '#/components/schemas/StructureMapGroup'
+
+    StructureMapGroup:
+      type: object
+      required: [name, input, rule]
+      properties:
+        name:
+          type: string
+          description: Human-readable name for the group
+        typeMode:
+          type: string
+          enum: [none, types, type-and-types]
+        documentation:
+          type: string
+          description: Additional documentation
+        input:
+          type: array
+          description: Input variables for the group
+          items:
+            $ref: '#/components/schemas/StructureMapGroupInput'
+        rule:
+          type: array
+          description: Transformation rules
+          items:
+            $ref: '#/components/schemas/StructureMapGroupRule'
+
+    StructureMapGroupInput:
+      type: object
+      required: [name, mode]
+      properties:
+        name:
+          type: string
+          description: Name for the input
+        type:
+          type: string
+          description: Type for the input
+        mode:
+          type: string
+          enum: [source, target]
+          description: Input mode
+        documentation:
+          type: string
+          description: Documentation for the input
+
+    StructureMapGroupRule:
+      type: object
+      required: [source]
+      properties:
+        name:
+          type: string
+          description: Name of the rule
+        source:
+          type: array
+          description: Source inputs for the rule
+          items:
+            type: object
+        target:
+          type: array
+          description: Target outputs for the rule
+          items:
+            type: object
+        documentation:
+          type: string
+          description: Documentation for the rule
+
+    StructureDefinition:
+      type: object
+      required: [resourceType, status, kind, type]
+      properties:
+        resourceType:
+          type: string
+          enum: [StructureDefinition]
+        id:
+          type: string
+          description: Logical ID of the resource
+        url:
+          type: string
+          description: Canonical URL for the StructureDefinition
+        name:
+          type: string
+          description: Name for the StructureDefinition
+        title:
+          type: string
+          description: Human-readable title
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+          description: Publication status
+        kind:
+          type: string
+          enum: [primitive-type, complex-type, resource, logical]
+          description: Kind of StructureDefinition
+        abstract:
+          type: boolean
+          description: Whether this is an abstract type
+        type:
+          type: string
+          description: Type being defined
+        baseDefinition:
+          type: string
+          description: Base StructureDefinition URL
+        derivation:
+          type: string
+          enum: [specialization, constraint]
+          description: How this relates to the base definition
+        snapshot:
+          $ref: '#/components/schemas/StructureDefinitionSnapshot'
+        differential:
+          $ref: '#/components/schemas/StructureDefinitionDifferential'
+
+    StructureDefinitionSnapshot:
+      type: object
+      required: [element]
+      properties:
+        element:
+          type: array
+          description: Element definitions in the snapshot
+          items:
+            $ref: '#/components/schemas/ElementDefinition'
+
+    StructureDefinitionDifferential:
+      type: object
+      required: [element]
+      properties:
+        element:
+          type: array
+          description: Element definitions in the differential
+          items:
+            $ref: '#/components/schemas/ElementDefinition'
+
+    ElementDefinition:
+      type: object
+      required: [path]
+      properties:
+        id:
+          type: string
+          description: Unique id for element in StructureDefinition
+        path:
+          type: string
+          description: Path of the element
+        sliceName:
+          type: string
+          description: Name of slice
+        min:
+          type: integer
+          minimum: 0
+          description: Minimum cardinality
+        max:
+          type: string
+          description: Maximum cardinality
+        type:
+          type: array
+          description: Data type and profile
+          items:
+            $ref: '#/components/schemas/ElementDefinitionType'
+        binding:
+          $ref: '#/components/schemas/ElementDefinitionBinding'
+
+    ElementDefinitionType:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          description: Data type or resource type
+        profile:
+          type: array
+          description: Profiles that apply to this type
+          items:
+            type: string
+
+    ElementDefinitionBinding:
+      type: object
+      properties:
+        strength:
+          type: string
+          enum: [required, extensible, preferred, example]
+          description: Binding strength
+        valueSet:
+          type: string
+          description: Source of value set
+
+    Parameters:
+      type: object
+      required: [resourceType]
+      properties:
+        resourceType:
+          type: string
+          enum: [Parameters]
+        id:
+          type: string
+          description: Logical ID of the resource
+        parameter:
+          type: array
+          description: Operation parameters
+          items:
+            $ref: '#/components/schemas/Parameter'
+
+    Parameter:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Name of the parameter
+        valueString:
+          type: string
+          description: String value
+        valueUri:
+          type: string
+          description: URI value
+        resource:
+          type: object
+          description: Resource value
+
+    Bundle:
+      type: object
+      required: [resourceType, type]
+      properties:
+        resourceType:
+          type: string
+          enum: [Bundle]
+        id:
+          type: string
+          description: Logical ID of the resource
+        type:
+          type: string
+          enum: [searchset, collection, transaction, batch]
+          description: Bundle type
+        total:
+          type: integer
+          description: Total number of matching resources
+        entry:
+          type: array
+          description: Bundle entries
+          items:
+            type: object
+            properties:
+              resource:
+                type: object
+                description: Resource in the bundle
+
+    OperationOutcome:
+      type: object
+      required: [resourceType, issue]
+      properties:
+        resourceType:
+          type: string
+          enum: [OperationOutcome]
+        id:
+          type: string
+          description: Logical ID of the resource
+        issue:
+          type: array
+          description: Issues encountered
+          items:
+            $ref: '#/components/schemas/OperationOutcomeIssue'
+
+    OperationOutcomeIssue:
+      type: object
+      required: [severity, code]
+      properties:
+        severity:
+          type: string
+          enum: [fatal, error, warning, information]
+          description: Issue severity
+        code:
+          type: string
+          enum: [invalid, structure, required, value, invariant, security, login, unknown, expired, forbidden, suppressed, processing, not-supported, duplicate, multiple-matches, not-found, deleted, too-long, code-invalid, extension, too-costly, business-rule, conflict, transient, lock-error, no-store, exception, timeout, incomplete, throttled, informational]
+          description: Issue type
+        diagnostics:
+          type: string
+          description: Additional diagnostic information
+        location:
+          type: array
+          description: Path to element(s) with issue
+          items:
+            type: string
+
+    ExecutionOptions:
+      type: object
+      properties:
+        strictMode:
+          type: boolean
+          description: Enable strict validation mode
+          default: false
+        validateInput:
+          type: boolean
+          description: Validate input data
+          default: false
+        validateOutput:
+          type: boolean
+          description: Validate output data
+          default: false
+        inputProfile:
+          type: string
+          description: StructureDefinition URL for input validation
+        outputProfile:
+          type: string
+          description: StructureDefinition URL for output validation
+
+    ValidationDetails:
+      type: object
+      properties:
+        input:
+          $ref: '#/components/schemas/ValidationResult'
+        output:
+          $ref: '#/components/schemas/ValidationResult'
+
+    ValidationResult:
+      type: object
+      required: [valid, errors, warnings]
+      properties:
+        valid:
+          type: boolean
+          description: Whether validation passed
+        errors:
+          type: array
+          description: Validation errors
+          items:
+            $ref: '#/components/schemas/ValidationIssue'
+        warnings:
+          type: array
+          description: Validation warnings
+          items:
+            $ref: '#/components/schemas/ValidationIssue'
+
+    ValidationIssue:
+      type: object
+      required: [path, message, severity]
+      properties:
+        path:
+          type: string
+          description: FHIR path to the element with issue
+        message:
+          type: string
+          description: Description of the validation issue
+        severity:
+          type: string
+          enum: [error, warning]
+          description: Issue severity
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Additional error details

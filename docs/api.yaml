@@ -1,15 +1,45 @@
 openapi: 3.0.3
 info:
   title: FML Runner API
-  description: API for compiling FHIR Mapping Language (FML) and executing StructureMaps
+  description: |
+    A comprehensive REST API for compiling and executing FHIR Mapping Language (FML) files 
+    to transform healthcare data using FHIR StructureMaps, with advanced validation capabilities.
+    
+    ## Features
+    - FML compilation to FHIR StructureMap resources
+    - StructureMap execution with validation support
+    - FHIR-compliant CRUD operations for StructureMaps and StructureDefinitions
+    - Standard FHIR $transform operation
+    - Resource validation against logical models and profiles
+    - Search capabilities with FHIR search parameters
+    
   version: 0.1.0
   contact:
-    name: Carl Leitner
+    name: FML Runner Support
     url: https://github.com/litlfred/fmlrunner
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: /api/v1
+  - url: http://localhost:3000/api/v1
     description: Local development server
+  - url: https://api.example.org/fml/v1
+    description: Production server
+
+tags:
+  - name: FML Compilation
+    description: Compile FHIR Mapping Language to StructureMaps
+  - name: StructureMap Execution
+    description: Execute StructureMap transformations
+  - name: StructureMaps
+    description: FHIR-compliant StructureMap CRUD operations
+  - name: StructureDefinitions
+    description: Logical model and profile management
+  - name: Validation
+    description: Resource validation against profiles
+  - name: Health
+    description: System health and monitoring
 
 paths:
   /compile:
