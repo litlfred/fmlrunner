@@ -107,6 +107,195 @@ describe('FmlRunnerApi', () => {
     });
   });
 
+  describe('FHIR-compliant StructureMap endpoints', () => {
+    describe('GET /api/v1/StructureMaps', () => {
+      it('should return empty bundle for search', async () => {
+        const response = await request(app)
+          .get('/api/v1/StructureMaps')
+          .expect(200);
+
+        expect(response.body.resourceType).toBe('Bundle');
+        expect(response.body.type).toBe('searchset');
+        expect(response.body.total).toBe(0);
+      });
+
+      it('should accept FHIR search parameters', async () => {
+        const response = await request(app)
+          .get('/api/v1/StructureMaps?name=test&status=active&_count=10')
+          .expect(200);
+
+        expect(response.body.resourceType).toBe('Bundle');
+      });
+    });
+
+    describe('GET /api/v1/StructureMaps/:id', () => {
+      it('should retrieve StructureMap by ID', async () => {
+        const response = await request(app)
+          .get('/api/v1/StructureMaps/test-structure-map.json')
+          .expect(200);
+
+        expect(response.body.resourceType).toBe('StructureMap');
+        expect(response.body.name).toBe('TestMap');
+      });
+
+      it('should return FHIR OperationOutcome for not found', async () => {
+        const response = await request(app)
+          .get('/api/v1/StructureMaps/non-existent')
+          .expect(404);
+
+        expect(response.body.resourceType).toBe('OperationOutcome');
+        expect(response.body.issue[0].severity).toBe('error');
+        expect(response.body.issue[0].code).toBe('not-found');
+      });
+    });
+
+    describe('POST /api/v1/StructureMaps', () => {
+      it('should create new StructureMap', async () => {
+        const structureMap = {
+          resourceType: 'StructureMap',
+          name: 'NewMap',
+          status: 'draft',
+          group: [{
+            name: 'main',
+            input: [{ name: 'source', mode: 'source' }],
+            rule: []
+          }]
+        };
+
+        const response = await request(app)
+          .post('/api/v1/StructureMaps')
+          .send(structureMap)
+          .expect(201);
+
+        expect(response.body.resourceType).toBe('StructureMap');
+        expect(response.body.name).toBe('NewMap');
+        expect(response.body.id).toBeDefined();
+      });
+
+      it('should return FHIR OperationOutcome for invalid resource', async () => {
+        const response = await request(app)
+          .post('/api/v1/StructureMaps')
+          .send({ resourceType: 'Patient' })
+          .expect(400);
+
+        expect(response.body.resourceType).toBe('OperationOutcome');
+        expect(response.body.issue[0].code).toBe('invalid');
+      });
+    });
+
+    describe('PUT /api/v1/StructureMaps/:id', () => {
+      it('should update existing StructureMap', async () => {
+        const structureMap = {
+          resourceType: 'StructureMap',
+          name: 'UpdatedMap',
+          status: 'active',
+          group: [{
+            name: 'main',
+            input: [{ name: 'source', mode: 'source' }],
+            rule: []
+          }]
+        };
+
+        const response = await request(app)
+          .put('/api/v1/StructureMaps/test-id')
+          .send(structureMap)
+          .expect(200);
+
+        expect(response.body.resourceType).toBe('StructureMap');
+        expect(response.body.id).toBe('test-id');
+      });
+    });
+
+    describe('DELETE /api/v1/StructureMaps/:id', () => {
+      it('should delete StructureMap', async () => {
+        await request(app)
+          .delete('/api/v1/StructureMaps/test-id')
+          .expect(204);
+      });
+    });
+  });
+
+  describe('POST /api/v1/StructureMaps/\\$transform', () => {
+    it('should transform using FHIR Parameters', async () => {
+      const parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'source',
+            resource: { name: 'Jane Doe' }
+          },
+          {
+            name: 'map',
+            valueString: 'test-structure-map.json'
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/v1/StructureMaps/$transform')
+        .send(parameters)
+        .expect(200);
+
+      expect(response.body.resourceType).toBe('Parameters');
+      expect(response.body.parameter[0].name).toBe('result');
+      expect(response.body.parameter[0].resource.fullName).toBe('Jane Doe');
+    });
+
+    it('should return OperationOutcome for invalid Parameters', async () => {
+      const response = await request(app)
+        .post('/api/v1/StructureMaps/$transform')
+        .send({ resourceType: 'Bundle' })
+        .expect(400);
+
+      expect(response.body.resourceType).toBe('OperationOutcome');
+      expect(response.body.issue[0].code).toBe('invalid');
+    });
+
+    it('should return OperationOutcome for missing parameters', async () => {
+      const parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'source',
+            resource: { name: 'Test' }
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/v1/StructureMaps/$transform')
+        .send(parameters)
+        .expect(400);
+
+      expect(response.body.resourceType).toBe('OperationOutcome');
+      expect(response.body.issue[0].diagnostics).toContain('source" and "map" parameters');
+    });
+
+    it('should return OperationOutcome for transformation failure', async () => {
+      const parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'source',
+            resource: { name: 'Test' }
+          },
+          {
+            name: 'map',
+            valueString: 'non-existent.json'
+          }
+        ]
+      };
+
+      const response = await request(app)
+        .post('/api/v1/StructureMaps/$transform')
+        .send(parameters)
+        .expect(400);
+
+      expect(response.body.resourceType).toBe('OperationOutcome');
+      expect(response.body.issue[0].code).toBe('processing');
+    });
+  });
+
   describe('GET /api/v1/health', () => {
     it('should return health status', async () => {
       const response = await request(app)
