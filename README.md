@@ -21,13 +21,17 @@ FML Runner is designed as a library component for larger application frameworks,
 
 ## Documentation Structure
 
-This project includes several focused requirements documents:
+This project includes comprehensive requirements documentation organized into focused documents:
 
-- [`FUNCTIONAL_REQUIREMENTS.md`](./docs/FUNCTIONAL_REQUIREMENTS.md) - Detailed functional specifications
-- [`API_REQUIREMENTS.md`](./docs/API_REQUIREMENTS.md) - API design and OpenAPI specifications
-- [`ARCHITECTURE_REQUIREMENTS.md`](./docs/ARCHITECTURE_REQUIREMENTS.md) - System architecture and design patterns
-- [`PERFORMANCE_REQUIREMENTS.md`](./docs/PERFORMANCE_REQUIREMENTS.md) - Performance and optimization requirements
-- [`DEPLOYMENT_REQUIREMENTS.md`](./docs/DEPLOYMENT_REQUIREMENTS.md) - Deployment and integration guidelines
+- [`REQUIREMENTS_SUMMARY.md`](./docs/REQUIREMENTS_SUMMARY.md) - **Start Here** - Complete overview and implementation roadmap
+- [`FUNCTIONAL_REQUIREMENTS.md`](./docs/FUNCTIONAL_REQUIREMENTS.md) - Detailed functional specifications (14 requirements)
+- [`API_REQUIREMENTS.md`](./docs/API_REQUIREMENTS.md) - API design and OpenAPI specifications (9 requirements)
+- [`ARCHITECTURE_REQUIREMENTS.md`](./docs/ARCHITECTURE_REQUIREMENTS.md) - System architecture and design patterns (20 requirements)
+- [`PERFORMANCE_REQUIREMENTS.md`](./docs/PERFORMANCE_REQUIREMENTS.md) - Performance and optimization requirements (26 requirements)
+- [`DEPLOYMENT_REQUIREMENTS.md`](./docs/DEPLOYMENT_REQUIREMENTS.md) - Deployment and integration guidelines (26 requirements)
+- [`openapi.yaml`](./docs/openapi.yaml) - Complete OpenAPI 3.0 specification with 12 endpoints
+
+**Total: 95 specific requirements** covering all aspects of the FML Runner library.
 
 ## Quick Start
 
