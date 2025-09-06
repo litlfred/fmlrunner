@@ -574,3 +574,172 @@ paths:
               schema:
                 $ref: '#/components/schemas/CacheStatistics'
 ```
+
+## 7. FHIR Ecosystem Integration (API-010)
+
+**Requirement:** The FML Runner SHALL leverage existing mature FHIR Node.js libraries to reduce development effort and improve reliability.
+
+### 7.1 Core FHIR Libraries to Integrate
+
+**Primary Libraries:**
+
+1. **fhir** (v4.12.0)
+   - Primary library for FHIR resource handling
+   - Provides JSON/XML serialization and validation
+   - Built-in FHIRPath evaluation support
+   - Repository: https://github.com/lantanagroup/FHIR.js
+
+2. **fhirpath** (v4.6.0)
+   - Official HL7 FHIRPath implementation
+   - Essential for StructureMap rule evaluation
+   - Repository: https://github.com/HL7/fhirpath.js
+
+3. **@ahryman40k/ts-fhir-types** (v4.0.39)
+   - TypeScript definitions for FHIR R4
+   - Type safety for StructureMap resources
+   - Better IDE support and compile-time validation
+
+4. **fhir-kit-client** (v1.9.2)
+   - FHIR client for remote resource retrieval
+   - SMART on FHIR support
+   - OAuth2 authentication capabilities
+
+**Additional Libraries for Consideration:**
+
+5. **@medplum/core** & **@medplum/fhir-router**
+   - Modern FHIR implementation with router capabilities
+   - Strong TypeScript support
+   - Repository: https://github.com/medplum/medplum
+
+6. **fhirpatch** (v1.1.21)
+   - FHIR Patch operation support
+   - Useful for StructureMap version management
+
+### 7.2 Integration Patterns
+
+**REQ-API-11**: Core functionality shall be built on established FHIR libraries:
+
+```typescript
+// Example integration with core FHIR libraries
+import { Fhir } from 'fhir';
+import { evaluate } from 'fhirpath';
+import { StructureMap } from '@ahryman40k/ts-fhir-types/lib/R4';
+
+class FMLCompiler {
+  private fhir: Fhir;
+  
+  constructor() {
+    this.fhir = new Fhir();
+  }
+  
+  async compile(fmlContent: string): Promise<StructureMap> {
+    // Leverage FHIR.js for validation and serialization
+    const structureMap = await this.compileFMLToStructureMap(fmlContent);
+    const validationResult = this.fhir.validate(structureMap);
+    
+    if (!validationResult.valid) {
+      throw new ValidationError(validationResult.messages);
+    }
+    
+    return structureMap;
+  }
+}
+
+class StructureMapExecutor {
+  execute(structureMap: StructureMap, sourceData: any): any {
+    // Use FHIRPath for rule evaluation
+    const pathResults = evaluate(sourceData, 'Patient.name');
+    return this.transformData(structureMap, sourceData, pathResults);
+  }
+}
+```
+
+### 7.3 FHIR-Compliant REST API Endpoints
+
+**REQ-API-12**: REST API endpoints shall follow FHIR RESTful patterns with full CRUD operations for StructureMaps:
+
+```yaml
+# FHIR-compliant StructureMap management endpoints
+paths:
+  # Create new StructureMap (server assigns ID)
+  /StructureMap:
+    post:
+      summary: Create new StructureMap
+      description: Compatible with FHIR create operation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/StructureMap'
+                - $ref: '#/components/schemas/FMLUploadRequest'
+
+  # Create or update StructureMap with specific ID
+  /StructureMap/{id}:
+    put:
+      summary: Create or update StructureMap
+      description: Compatible with FHIR update operation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/StructureMap'
+                - $ref: '#/components/schemas/FMLUploadRequest'
+    
+    get:
+      summary: Read StructureMap
+      description: Compatible with FHIR read operation
+    
+    delete:
+      summary: Delete StructureMap
+      description: Compatible with FHIR delete operation
+
+  # Search StructureMaps
+  /StructureMap:
+    get:
+      summary: Search StructureMaps
+      description: Compatible with FHIR search operation
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, retired]
+        - name: url
+          in: query
+          schema:
+            type: string
+```
+
+### 7.4 Package Dependencies
+
+**REQ-API-13**: Package.json shall include specific FHIR library versions:
+
+```json
+{
+  "dependencies": {
+    "fhir": "^4.12.0",
+    "fhirpath": "^4.6.0",
+    "@ahryman40k/ts-fhir-types": "^4.0.39",
+    "fhir-kit-client": "^1.9.2",
+    "@medplum/core": "^4.3.11",
+    "fhirpatch": "^1.1.21"
+  },
+  "devDependencies": {
+    "@types/fhir": "^0.0.41"
+  }
+}
+```
+
+**REQ-API-14**: Library integration shall include comprehensive unit tests validating compatibility with FHIR specifications and ensuring interoperability with existing FHIR ecosystems.

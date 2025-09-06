@@ -321,6 +321,7 @@ paths:
       description: |
         Returns a list of available StructureMaps from the specified source.
         Supports filtering and pagination for large collections.
+        Compatible with FHIR search operations.
       operationId: listStructureMaps
       tags:
         - StructureMap Management
@@ -352,6 +353,22 @@ paths:
             minimum: 0
             default: 0
           description: Number of results to skip
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Filter by StructureMap name (partial match)
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, retired, unknown]
+          description: Filter by StructureMap status
+        - name: url
+          in: query
+          schema:
+            type: string
+          description: Filter by canonical URL (partial match)
       responses:
         '200':
           description: List of StructureMaps
@@ -390,6 +407,82 @@ paths:
                       limit: 20
                       offset: 0
                       hasMore: true
+    post:
+      summary: Create new StructureMap
+      description: |
+        Creates a new StructureMap resource with server-assigned ID.
+        Compatible with FHIR create operation (POST).
+        The StructureMap can be uploaded as compiled JSON or FML source that will be compiled.
+      operationId: createStructureMap
+      tags:
+        - StructureMap Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/StructureMap'
+                - $ref: '#/components/schemas/FMLUploadRequest'
+            examples:
+              structure_map_json:
+                summary: Upload compiled StructureMap JSON
+                value:
+                  resourceType: "StructureMap"
+                  url: "http://example.org/fml/PatientTransform"
+                  version: "1.0.0"
+                  name: "PatientTransform"
+                  status: "active"
+                  structure:
+                    - url: "http://hl7.org/fhir/StructureDefinition/Patient"
+                      mode: "source"
+                      alias: "src"
+                  group:
+                    - name: "Patient"
+                      input:
+                        - name: "src"
+                          mode: "source"
+              fml_source:
+                summary: Upload FML source for compilation
+                value:
+                  type: "fml"
+                  content: |
+                    map "PatientTransform" = "http://example.org/fml/PatientTransform"
+                    uses "http://hl7.org/fhir/StructureDefinition/Patient" as source
+                    group Patient(source src, target tgt) {
+                      src.name -> tgt.name;
+                    }
+                  options:
+                    fhirVersion: "R4"
+                    strictMode: true
+          text/plain:
+            schema:
+              type: string
+              description: FML source content
+      responses:
+        '201':
+          description: StructureMap created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created StructureMap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMapCreateResponse'
+        '400':
+          description: Invalid request or compilation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: StructureMap with same URL already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /structure-maps/{id}:
     get:
@@ -397,6 +490,7 @@ paths:
       description: |
         Retrieves a specific StructureMap by its identifier.
         The StructureMap is retrieved from configured sources.
+        Compatible with FHIR read operation.
       operationId: getStructureMapById
       tags:
         - StructureMap Management
@@ -431,6 +525,157 @@ paths:
                   - $ref: '#/components/schemas/StructureMapWithMetadata'
         '404':
           description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Create or update StructureMap
+      description: |
+        Creates a new StructureMap or updates an existing one with the specified ID.
+        Compatible with FHIR update operation (PUT).
+        Supports both compiled StructureMap JSON and FML source compilation.
+      operationId: createOrUpdateStructureMap
+      tags:
+        - StructureMap Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: StructureMap identifier
+          example: "PatientTransform"
+        - name: upsert
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Whether to create if not exists (true) or only update existing (false)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/StructureMap'
+                - $ref: '#/components/schemas/FMLUploadRequest'
+            examples:
+              structure_map_json:
+                summary: Upload compiled StructureMap JSON
+                value:
+                  resourceType: "StructureMap"
+                  id: "PatientTransform"
+                  url: "http://example.org/fml/PatientTransform"
+                  version: "1.0.0"
+                  name: "PatientTransform"
+                  status: "active"
+                  structure:
+                    - url: "http://hl7.org/fhir/StructureDefinition/Patient"
+                      mode: "source"
+                      alias: "src"
+                  group:
+                    - name: "Patient"
+                      input:
+                        - name: "src"
+                          mode: "source"
+              fml_source:
+                summary: Upload FML source for compilation
+                value:
+                  type: "fml"
+                  content: |
+                    map "PatientTransform" = "http://example.org/fml/PatientTransform"
+                    uses "http://hl7.org/fhir/StructureDefinition/Patient" as source
+                    group Patient(source src, target tgt) {
+                      src.name -> tgt.name;
+                    }
+                  options:
+                    fhirVersion: "R4"
+                    strictMode: true
+          text/plain:
+            schema:
+              type: string
+              description: FML source content
+      responses:
+        '200':
+          description: StructureMap updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMapUpdateResponse'
+        '201':
+          description: StructureMap created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created StructureMap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMapCreateResponse'
+        '400':
+          description: Invalid request or compilation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: StructureMap not found (when upsert=false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete StructureMap
+      description: |
+        Deletes a StructureMap by its identifier.
+        Compatible with FHIR delete operation.
+        Removes the StructureMap from all configured storage sources.
+      operationId: deleteStructureMap
+      tags:
+        - StructureMap Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: StructureMap identifier
+          example: "PatientTransform"
+        - name: cascade
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Whether to cascade delete related resources
+      responses:
+        '200':
+          description: StructureMap deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "StructureMap 'PatientTransform' deleted successfully"
+                  deletedAt:
+                    type: string
+                    format: date-time
+                  cascadedDeletes:
+                    type: array
+                    items:
+                      type: string
+                    description: List of related resources that were also deleted
+        '404':
+          description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: StructureMap is in use and cannot be deleted
           content:
             application/json:
               schema:
@@ -582,6 +827,149 @@ paths:
 
 components:
   schemas:
+    FMLUploadRequest:
+      type: object
+      required:
+        - type
+        - content
+      properties:
+        type:
+          type: string
+          enum: [fml]
+          description: Content type indicator
+        content:
+          type: string
+          description: FML source content to compile
+          example: |
+            map "PatientTransform" = "http://example.org/fml/PatientTransform"
+            uses "http://hl7.org/fhir/StructureDefinition/Patient" as source
+            uses "http://hl7.org/fhir/StructureDefinition/Patient" as target
+            group Patient(source src, target tgt) {
+              src.name -> tgt.name;
+              src.birthDate -> tgt.birthDate;
+            }
+        options:
+          $ref: '#/components/schemas/CompilationOptions'
+        metadata:
+          type: object
+          properties:
+            description:
+              type: string
+              description: Human-readable description of the StructureMap
+            author:
+              type: string
+              description: Author information
+            tags:
+              type: array
+              items:
+                type: string
+              description: Tags for categorization
+            experimental:
+              type: boolean
+              default: false
+              description: Whether this is experimental content
+
+    StructureMapCreateResponse:
+      type: object
+      required:
+        - id
+        - url
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Server-assigned StructureMap identifier
+        url:
+          type: string
+          format: uri
+          description: Canonical URL of the created StructureMap
+        version:
+          type: string
+          description: Version of the created StructureMap
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+          description: Status of the created StructureMap
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the StructureMap was created
+        location:
+          type: string
+          format: uri
+          description: Full URL to access the created StructureMap
+        compilationInfo:
+          type: object
+          properties:
+            wasCompiled:
+              type: boolean
+              description: Whether FML compilation was performed
+            compilationTime:
+              type: integer
+              description: Compilation time in milliseconds
+            warnings:
+              type: array
+              items:
+                $ref: '#/components/schemas/ValidationWarning'
+              description: Compilation warnings
+
+    StructureMapUpdateResponse:
+      type: object
+      required:
+        - id
+        - url
+        - status
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: StructureMap identifier
+        url:
+          type: string
+          format: uri
+          description: Canonical URL of the updated StructureMap
+        version:
+          type: string
+          description: Version of the updated StructureMap
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+          description: Status of the updated StructureMap
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the StructureMap was last updated
+        previousVersion:
+          type: string
+          description: Previous version before update
+        compilationInfo:
+          type: object
+          properties:
+            wasCompiled:
+              type: boolean
+              description: Whether FML compilation was performed
+            compilationTime:
+              type: integer
+              description: Compilation time in milliseconds
+            warnings:
+              type: array
+              items:
+                $ref: '#/components/schemas/ValidationWarning'
+              description: Compilation warnings
+        changesSummary:
+          type: object
+          properties:
+            structureChanges:
+              type: boolean
+              description: Whether structure definitions changed
+            groupChanges:
+              type: boolean
+              description: Whether group definitions changed
+            ruleChanges:
+              type: boolean
+              description: Whether transformation rules changed
+
     CompilationRequest:
       type: object
       required:
