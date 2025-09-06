@@ -416,40 +416,7 @@ components:
           format: date-time
 ```
 
-### 3.3 Authentication and Security (API-006)
-
-**Requirement:** The OpenAPI specification SHALL define security schemes for API access.
-
-```yaml
-components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-    
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
-    
-    OAuth2:
-      type: oauth2
-      flows:
-        clientCredentials:
-          tokenUrl: /oauth/token
-          scopes:
-            fml:compile: Compile FML content
-            fml:execute: Execute StructureMaps
-            fml:read: Read StructureMaps
-
-security:
-  - BearerAuth: []
-  - ApiKeyAuth: []
-  - OAuth2: [fml:compile, fml:execute, fml:read]
-```
-
-## 4. Error Handling API (API-007)
+## 4. Error Handling API (API-006)
 
 **Requirement:** The API SHALL provide consistent error handling and reporting mechanisms.
 
@@ -462,9 +429,7 @@ enum ErrorType {
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   RETRIEVAL_ERROR = 'RETRIEVAL_ERROR',
   CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
-  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR'
+  NETWORK_ERROR = 'NETWORK_ERROR'
 }
 
 interface FMLRunnerError extends Error {
@@ -480,7 +445,6 @@ interface FMLRunnerError extends Error {
 
 - `200 OK` - Successful operation
 - `400 Bad Request` - Invalid input data or parameters
-- `401 Unauthorized` - Authentication required
 - `403 Forbidden` - Access denied
 - `404 Not Found` - StructureMap or resource not found
 - `422 Unprocessable Entity` - Validation errors
@@ -489,7 +453,7 @@ interface FMLRunnerError extends Error {
 - `502 Bad Gateway` - External service error
 - `503 Service Unavailable` - Service temporarily unavailable
 
-## 5. Versioning and Compatibility (API-008)
+## 5. Versioning and Compatibility (API-007)
 
 **Requirement:** The API SHALL support versioning and backward compatibility.
 
@@ -517,7 +481,7 @@ paths:
               $ref: '#/components/schemas/CompilationRequestV2'
 ```
 
-## 6. Performance and Monitoring API (API-009)
+## 6. Performance and Monitoring API (API-008)
 
 **Requirement:** The API SHALL provide endpoints for basic performance monitoring and health checking.
 

@@ -1244,31 +1244,10 @@ components:
           additionalProperties:
             type: string
           description: Custom headers for HTTP retrieval
-        authentication:
-          $ref: '#/components/schemas/AuthConfig'
         cache:
           type: boolean
           default: true
           description: Whether to use cache for retrieval
-
-    AuthConfig:
-      type: object
-      properties:
-        type:
-          type: string
-          enum: [bearer, basic, apikey]
-        token:
-          type: string
-          description: Authentication token
-        username:
-          type: string
-          description: Username for basic auth
-        password:
-          type: string
-          description: Password for basic auth
-        apiKey:
-          type: string
-          description: API key for API key authentication
 
     StructureMap:
       type: object
@@ -1574,36 +1553,6 @@ components:
                 - family: "Doe"
                   given: ["John"]
               birthDate: "1990-01-01"
-
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT Bearer token authentication
-    
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
-      description: API key authentication
-    
-    OAuth2:
-      type: oauth2
-      flows:
-        clientCredentials:
-          tokenUrl: /oauth/token
-          scopes:
-            fml:compile: Compile FML content to StructureMaps
-            fml:execute: Execute StructureMap transformations
-            fml:read: Read StructureMaps and metadata
-            fml:manage: Manage cache and system operations
-            fml:monitor: Access monitoring and metrics endpoints
-
-security:
-  - BearerAuth: []
-  - ApiKeyAuth: []
-  - OAuth2: [fml:compile, fml:execute, fml:read]
 
 tags:
   - name: Compilation

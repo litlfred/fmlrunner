@@ -59,22 +59,9 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 - Support HTTP/HTTPS protocols
 - Implement caching mechanisms for remote resources
 - Handle network errors and timeouts
-- Support authentication mechanisms (Bearer tokens, API keys)
 - Validate retrieved content before use
 
-### 2.4 Performance Optimization (FR-004)
-
-**Requirement:** The library SHALL optimize performance for repeated executions of the same StructureMap.
-
-**Acceptance Criteria:**
-- Implement StructureMap caching to avoid recompilation
-- Cache parsed and validated StructureMaps in memory
-- Provide cache invalidation mechanisms
-- Support configurable cache size limits
-- Implement efficient lookup mechanisms for cached resources
-- Monitor cache hit/miss ratios
-
-### 2.5 Error Handling (FR-005)
+### 2.4 Error Handling (FR-004)
 
 **Requirement:** The library SHALL provide comprehensive error handling and reporting.
 
@@ -88,7 +75,7 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 
 ## 3. Data Format Requirements
 
-### 3.1 Input Formats (FR-006)
+### 3.1 Input Formats (FR-005)
 
 **Supported Input Formats:**
 - FML content: Plain text (UTF-8 encoding)
@@ -96,7 +83,7 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 - Source data: JSON or XML format
 - Configuration: JSON format
 
-### 3.2 Output Formats (FR-007)
+### 3.2 Output Formats (FR-006)
 
 **Supported Output Formats:**
 - StructureMap resources: JSON format (FHIR R4/R5 compliant)
@@ -106,7 +93,7 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 
 ## 4. Validation Requirements
 
-### 4.1 FML Validation (FR-008)
+### 4.1 FML Validation (FR-007)
 
 **Requirement:** The library SHALL validate FML content according to FHIR specifications.
 
@@ -117,7 +104,7 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 - Ensure FHIR Path expression validity
 - Report validation errors with specific locations
 
-### 4.2 StructureMap Validation (FR-009)
+### 4.2 StructureMap Validation (FR-008)
 
 **Requirement:** The library SHALL validate StructureMap resources before execution.
 
@@ -130,7 +117,7 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 
 ## 5. Configuration Requirements
 
-### 5.1 Runtime Configuration (FR-010)
+### 5.1 Runtime Configuration (FR-009)
 
 **Requirement:** The library SHALL support runtime configuration for various operational parameters.
 
@@ -139,12 +126,11 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 - Network timeout values for remote retrieval
 - Default directories for local StructureMap lookup
 - Logging levels and output destinations
-- Authentication credentials for remote resources
 - FHIR version compatibility settings
 
 ## 6. Integration Requirements
 
-### 6.1 Library Interface (FR-011)
+### 6.1 Library Interface (FR-010)
 
 **Requirement:** The library SHALL provide clean interfaces for integration into larger application frameworks.
 
@@ -156,7 +142,7 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 - Support multiple instantiation patterns (singleton, factory, etc.)
 - Minimize external dependencies
 
-### 6.2 Event Handling (FR-012)
+### 6.2 Event Handling (FR-011)
 
 **Requirement:** The library SHALL provide event-driven interfaces for monitoring and extensibility.
 
@@ -169,7 +155,7 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 
 ## 7. Security Requirements
 
-### 7.1 Input Validation (FR-013)
+### 7.1 Input Validation (FR-012)
 
 **Requirement:** The library SHALL validate all inputs to prevent security vulnerabilities.
 
@@ -180,13 +166,12 @@ The FML Runner library shall provide functionality for compiling FHIR Mapping La
 - Validate URL formats for remote retrieval
 - Implement proper encoding/decoding for all data formats
 
-### 7.2 Resource Access Control (FR-014)
+### 7.2 Resource Access Control (FR-013)
 
-**Requirement:** The library SHALL implement appropriate access controls for resource retrieval.
+**Requirement:** The library SHALL implement appropriate security controls for resource retrieval.
 
 **Acceptance Criteria:**
-- Support authentication for remote resource access
 - Implement proper SSL/TLS certificate validation
 - Provide mechanisms to restrict accessible URLs/directories
 - Log security-relevant events appropriately
-- Handle authentication failures gracefully
+- Handle network failures gracefully

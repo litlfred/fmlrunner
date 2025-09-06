@@ -425,20 +425,6 @@ interface SecurityArchitecture {
     sizeLimit: SizeLimitEnforcer;
   };
   
-  // Authentication Layer
-  authentication: {
-    providers: AuthenticationProvider[];
-    tokenValidator: TokenValidator;
-    sessionManager: SessionManager;
-  };
-  
-  // Authorization Layer
-  authorization: {
-    rbac: RoleBasedAccessControl;
-    policies: PolicyEngine;
-    permissions: PermissionManager;
-  };
-  
   // Transport Security Layer
   transport: {
     tls: TLSConfiguration;
@@ -454,7 +440,6 @@ interface SecurityArchitecture {
 
 - **HTTPS enforcement**: All HTTP communications must use TLS
 - **Certificate validation**: Proper SSL/TLS certificate validation
-- **Authentication tokens**: Secure handling of authentication credentials
 - **Input sanitization**: All inputs must be validated and sanitized
 - **Rate limiting**: Protection against DoS attacks
 

@@ -341,8 +341,6 @@ FML_RUNNER_RETRY_ATTEMPTS=3
 
 # Security Configuration
 FML_RUNNER_TLS_ENABLED=true
-FML_RUNNER_AUTH_REQUIRED=true
-FML_RUNNER_JWT_SECRET=<secret>
 
 # Storage Configuration
 FML_RUNNER_STORAGE_TYPE=filesystem
@@ -454,7 +452,6 @@ GET /health/detailed // Detailed health information
 
 **Network Security Features:**
 - TLS encryption for all external communications
-- Certificate-based authentication
 - Network segmentation support
 - Firewall rule templates
 - VPN compatibility
