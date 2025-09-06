@@ -91,8 +91,9 @@ export class FmlRunner {
   }
 }
 
-// Export types and classes
+// Export main classes and types
 export * from './types';
-export { FmlCompiler };
-export { StructureMapRetriever };
-export { StructureMapExecutor };
+export { FmlCompiler } from './lib/fml-compiler';
+export { StructureMapRetriever } from './lib/structure-map-retriever';
+export { StructureMapExecutor } from './lib/structure-map-executor';
+export { FmlRunnerApi } from './api/server';
