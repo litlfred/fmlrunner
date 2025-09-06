@@ -1,0 +1,49 @@
+{
+  "name": "fml-runner",
+  "version": "1.0.0",
+  "description": "A Node.js library for compiling and executing FHIR Mapping Language (FML) files to transform healthcare data using FHIR StructureMaps",
+  "keywords": [
+    "fhir",
+    "fml",
+    "mapping",
+    "transformation",
+    "healthcare",
+    "structuremap",
+    "hl7"
+  ],
+  "author": "Carl Leitner",
+  "license": "MIT",
+  "homepage": "https://github.com/litlfred/fmlrunner#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/litlfred/fmlrunner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/litlfred/fmlrunner/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "docs/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "echo 'Build script to be implemented'",
+    "test": "echo 'Test script to be implemented'",
+    "lint": "echo 'Lint script to be implemented'",
+    "docs": "echo 'Documentation generation to be implemented'"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "node": ">=16.0.0"
+  }
+}

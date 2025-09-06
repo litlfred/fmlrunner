@@ -1,0 +1,1141 @@
+openapi: 3.0.3
+info:
+  title: FML Runner API
+  description: |
+    FHIR Mapping Language (FML) Runner API for compiling FML content to StructureMaps 
+    and executing transformations on healthcare data.
+    
+    This API provides functionality for:
+    - Compiling FML files to FHIR StructureMap resources
+    - Executing StructureMaps on source data to perform transformations
+    - Managing and retrieving StructureMaps from various sources
+    - Performance monitoring and health checking
+  version: 1.0.0
+  contact:
+    name: FML Runner Support
+    url: https://github.com/litlfred/fmlrunner
+    email: support@fmlrunner.org
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.fmlrunner.org/v1
+    description: Production server
+  - url: https://staging-api.fmlrunner.org/v1
+    description: Staging server
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+
+paths:
+  /compile:
+    post:
+      summary: Compile FML to StructureMap
+      description: |
+        Compiles FHIR Mapping Language (FML) content into a FHIR StructureMap resource.
+        The compilation process includes parsing, validation, and optimization.
+      operationId: compileFML
+      tags:
+        - Compilation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompilationRequest'
+            examples:
+              simple_mapping:
+                summary: Simple Patient mapping
+                value:
+                  content: |
+                    map "PatientTransform" = "http://example.org/fml/PatientTransform"
+                    
+                    uses "http://hl7.org/fhir/StructureDefinition/Patient" as source
+                    uses "http://hl7.org/fhir/StructureDefinition/Patient" as target
+                    
+                    group Patient(source src, target tgt) {
+                      src.name -> tgt.name;
+                      src.birthDate -> tgt.birthDate;
+                    }
+                  options:
+                    fhirVersion: "R4"
+                    strictMode: true
+          text/plain:
+            schema:
+              type: string
+              description: Raw FML content
+            example: |
+              map "PatientTransform" = "http://example.org/fml/PatientTransform"
+              
+              uses "http://hl7.org/fhir/StructureDefinition/Patient" as source
+              uses "http://hl7.org/fhir/StructureDefinition/Patient" as target
+              
+              group Patient(source src, target tgt) {
+                src.name -> tgt.name;
+                src.birthDate -> tgt.birthDate;
+              }
+      responses:
+        '200':
+          description: Compilation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureMap'
+              examples:
+                compiled_structure_map:
+                  summary: Compiled StructureMap
+                  value:
+                    resourceType: "StructureMap"
+                    id: "PatientTransform"
+                    url: "http://example.org/fml/PatientTransform"
+                    version: "1.0.0"
+                    name: "PatientTransform"
+                    status: "active"
+                    structure:
+                      - url: "http://hl7.org/fhir/StructureDefinition/Patient"
+                        mode: "source"
+                        alias: "src"
+                      - url: "http://hl7.org/fhir/StructureDefinition/Patient"
+                        mode: "target"
+                        alias: "tgt"
+                    group:
+                      - name: "Patient"
+                        typeMode: "none"
+                        input:
+                          - name: "src"
+                            mode: "source"
+                          - name: "tgt"
+                            mode: "target"
+                        rule:
+                          - name: "name"
+                            source:
+                              - context: "src"
+                                element: "name"
+                            target:
+                              - context: "tgt"
+                                element: "name"
+                          - name: "birthDate"
+                            source:
+                              - context: "src"
+                                element: "birthDate"
+                            target:
+                              - context: "tgt"
+                                element: "birthDate"
+        '400':
+          description: Compilation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                syntax_error:
+                  summary: FML Syntax Error
+                  value:
+                    error: "COMPILATION_ERROR"
+                    message: "Syntax error in FML content"
+                    details:
+                      line: 5
+                      column: 12
+                      expected: ";"
+                      actual: "{"
+                    timestamp: "2024-01-15T10:30:00Z"
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /validate:
+    post:
+      summary: Validate FML content
+      description: |
+        Validates FHIR Mapping Language (FML) content without performing compilation.
+        Returns validation results including any syntax or semantic errors.
+      operationId: validateFML
+      tags:
+        - Validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidationRequest'
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+              examples:
+                valid_fml:
+                  summary: Valid FML content
+                  value:
+                    isValid: true
+                    errors: []
+                    warnings: []
+                invalid_fml:
+                  summary: Invalid FML content
+                  value:
+                    isValid: false
+                    errors:
+                      - type: "SYNTAX_ERROR"
+                        message: "Missing semicolon"
+                        line: 5
+                        column: 12
+                    warnings:
+                      - type: "STYLE_WARNING"
+                        message: "Consider using more descriptive variable names"
+                        line: 3
+                        column: 8
+
+  /execute:
+    post:
+      summary: Execute StructureMap transformation
+      description: |
+        Executes a StructureMap transformation on the provided source data.
+        Returns the transformed result according to the mapping rules.
+      operationId: executeStructureMap
+      tags:
+        - Execution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionRequest'
+            examples:
+              patient_transformation:
+                summary: Patient data transformation
+                value:
+                  structureMap:
+                    resourceType: "StructureMap"
+                    id: "PatientTransform"
+                    url: "http://example.org/fml/PatientTransform"
+                    status: "active"
+                    group:
+                      - name: "Patient"
+                        rule:
+                          - name: "name"
+                            source:
+                              - context: "src"
+                                element: "name"
+                            target:
+                              - context: "tgt"
+                                element: "name"
+                  sourceData:
+                    resourceType: "Patient"
+                    name:
+                      - family: "Doe"
+                        given: ["John"]
+                    birthDate: "1990-01-01"
+                  context:
+                    variables:
+                      organization: "Example Hospital"
+      responses:
+        '200':
+          description: Execution successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionResponse'
+              examples:
+                successful_execution:
+                  summary: Successful transformation
+                  value:
+                    result:
+                      resourceType: "Patient"
+                      name:
+                        - family: "Doe"
+                          given: ["John"]
+                      birthDate: "1990-01-01"
+                    logs:
+                      - level: "INFO"
+                        message: "Transformation completed successfully"
+                        timestamp: "2024-01-15T10:30:00Z"
+                    performance:
+                      executionTime: 45
+                      memoryUsed: 1024
+                      cacheHit: true
+        '400':
+          description: Execution error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /execute/{structureMapId}:
+    post:
+      summary: Execute StructureMap by ID
+      description: |
+        Executes a StructureMap transformation using a StructureMap identified by ID.
+        The StructureMap is retrieved from configured sources before execution.
+      operationId: executeStructureMapById
+      tags:
+        - Execution
+      parameters:
+        - name: structureMapId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: StructureMap identifier
+          example: "PatientTransform"
+        - name: source
+          in: query
+          schema:
+            type: string
+            enum: [directory, url, cache]
+            default: cache
+          description: Source to retrieve StructureMap from
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionByIdRequest'
+      responses:
+        '200':
+          description: Execution successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionResponse'
+        '404':
+          description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /structure-maps:
+    get:
+      summary: List available StructureMaps
+      description: |
+        Returns a list of available StructureMaps from the specified source.
+        Supports filtering and pagination for large collections.
+      operationId: listStructureMaps
+      tags:
+        - StructureMap Management
+      parameters:
+        - name: source
+          in: query
+          schema:
+            type: string
+            enum: [directory, url, cache, all]
+            default: all
+          description: Source type for listing
+        - name: path
+          in: query
+          schema:
+            type: string
+          description: Path or URL prefix for filtering
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum number of results to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of results to skip
+      responses:
+        '200':
+          description: List of StructureMaps
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  structureMaps:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StructureMapInfo'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+              examples:
+                structure_map_list:
+                  summary: Available StructureMaps
+                  value:
+                    structureMaps:
+                      - id: "PatientTransform"
+                        url: "http://example.org/fml/PatientTransform"
+                        name: "Patient Transform"
+                        version: "1.0.0"
+                        status: "active"
+                        source: "directory"
+                        lastModified: "2024-01-15T10:30:00Z"
+                      - id: "ObservationTransform"
+                        url: "http://example.org/fml/ObservationTransform"
+                        name: "Observation Transform"
+                        version: "2.1.0"
+                        status: "active"
+                        source: "url"
+                        lastModified: "2024-01-14T15:45:00Z"
+                    pagination:
+                      total: 25
+                      limit: 20
+                      offset: 0
+                      hasMore: true
+
+  /structure-maps/{id}:
+    get:
+      summary: Retrieve StructureMap by ID
+      description: |
+        Retrieves a specific StructureMap by its identifier.
+        The StructureMap is retrieved from configured sources.
+      operationId: getStructureMapById
+      tags:
+        - StructureMap Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: StructureMap identifier
+          example: "PatientTransform"
+        - name: source
+          in: query
+          schema:
+            type: string
+            enum: [directory, url, cache]
+          description: Preferred source for retrieval
+        - name: includeMetadata
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include metadata about retrieval source and caching
+      responses:
+        '200':
+          description: StructureMap retrieved successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/StructureMap'
+                  - $ref: '#/components/schemas/StructureMapWithMetadata'
+        '404':
+          description: StructureMap not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      summary: Health check
+      description: |
+        Returns the health status of the FML Runner service.
+        Used for basic health monitoring and load balancer checks.
+      operationId: healthCheck
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              examples:
+                healthy:
+                  summary: Healthy service
+                  value:
+                    status: "healthy"
+                    timestamp: "2024-01-15T10:30:00Z"
+                    version: "1.0.0"
+                    uptime: 86400
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /health/ready:
+    get:
+      summary: Readiness check
+      description: |
+        Returns the readiness status of the service.
+        Used for Kubernetes readiness probes and deployment verification.
+      operationId: readinessCheck
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessStatus'
+        '503':
+          description: Service is not ready
+
+  /health/live:
+    get:
+      summary: Liveness check
+      description: |
+        Returns the liveness status of the service.
+        Used for Kubernetes liveness probes and restart decisions.
+      operationId: livenessCheck
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivenessStatus'
+        '503':
+          description: Service is not responding
+
+  /metrics:
+    get:
+      summary: Performance metrics
+      description: |
+        Returns performance metrics in Prometheus format.
+        Used for monitoring and alerting systems.
+      operationId: getMetrics
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Metrics data
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Prometheus-formatted metrics
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+
+  /cache/stats:
+    get:
+      summary: Cache statistics
+      description: |
+        Returns detailed cache performance statistics.
+        Used for cache optimization and performance tuning.
+      operationId: getCacheStats
+      tags:
+        - Cache Management
+      responses:
+        '200':
+          description: Cache statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CacheStatistics'
+
+  /cache/clear:
+    post:
+      summary: Clear cache
+      description: |
+        Clears specified cache components or all caches.
+        Used for cache management and troubleshooting.
+      operationId: clearCache
+      tags:
+        - Cache Management
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cacheType:
+                  type: string
+                  enum: [all, compilation, retrieval, parse]
+                  default: all
+                  description: Type of cache to clear
+      responses:
+        '200':
+          description: Cache cleared successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cache cleared successfully"
+                  clearedTypes:
+                    type: array
+                    items:
+                      type: string
+                    example: ["compilation", "retrieval"]
+
+components:
+  schemas:
+    CompilationRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: FML content to compile
+          example: |
+            map "PatientTransform" = "http://example.org/fml/PatientTransform"
+            uses "http://hl7.org/fhir/StructureDefinition/Patient" as source
+            uses "http://hl7.org/fhir/StructureDefinition/Patient" as target
+            group Patient(source src, target tgt) {
+              src.name -> tgt.name;
+            }
+        options:
+          $ref: '#/components/schemas/CompilationOptions'
+
+    CompilationOptions:
+      type: object
+      properties:
+        fhirVersion:
+          type: string
+          enum: [R4, R5]
+          default: R4
+          description: FHIR version for compilation
+        strictMode:
+          type: boolean
+          default: false
+          description: Enable strict validation mode
+        includeDebugInfo:
+          type: boolean
+          default: false
+          description: Include debug information in output
+        optimizationLevel:
+          type: string
+          enum: [none, basic, aggressive]
+          default: basic
+          description: Optimization level for generated StructureMap
+
+    ValidationRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: FML content to validate
+        options:
+          type: object
+          properties:
+            fhirVersion:
+              type: string
+              enum: [R4, R5]
+              default: R4
+            strictMode:
+              type: boolean
+              default: false
+
+    ValidationResult:
+      type: object
+      required:
+        - isValid
+        - errors
+        - warnings
+      properties:
+        isValid:
+          type: boolean
+          description: Whether the FML content is valid
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          description: List of validation errors
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationWarning'
+          description: List of validation warnings
+
+    ValidationError:
+      type: object
+      required:
+        - type
+        - message
+      properties:
+        type:
+          type: string
+          enum: [SYNTAX_ERROR, SEMANTIC_ERROR, REFERENCE_ERROR]
+          description: Type of validation error
+        message:
+          type: string
+          description: Human-readable error message
+        line:
+          type: integer
+          minimum: 1
+          description: Line number where error occurred
+        column:
+          type: integer
+          minimum: 1
+          description: Column number where error occurred
+        context:
+          type: string
+          description: Additional context about the error
+
+    ValidationWarning:
+      type: object
+      required:
+        - type
+        - message
+      properties:
+        type:
+          type: string
+          enum: [STYLE_WARNING, PERFORMANCE_WARNING, COMPATIBILITY_WARNING]
+        message:
+          type: string
+        line:
+          type: integer
+          minimum: 1
+        column:
+          type: integer
+          minimum: 1
+
+    ExecutionRequest:
+      type: object
+      required:
+        - structureMap
+        - sourceData
+      properties:
+        structureMap:
+          $ref: '#/components/schemas/StructureMap'
+        sourceData:
+          type: object
+          description: Source data to transform
+        context:
+          $ref: '#/components/schemas/ExecutionContext'
+
+    ExecutionByIdRequest:
+      type: object
+      required:
+        - sourceData
+      properties:
+        sourceData:
+          type: object
+          description: Source data to transform
+        context:
+          $ref: '#/components/schemas/ExecutionContext'
+        retrievalOptions:
+          $ref: '#/components/schemas/RetrievalOptions'
+
+    ExecutionContext:
+      type: object
+      properties:
+        variables:
+          type: object
+          additionalProperties: true
+          description: Context variables for transformation
+        resolver:
+          type: object
+          description: Custom resource resolver configuration
+        debugMode:
+          type: boolean
+          default: false
+          description: Enable debug mode for execution
+
+    ExecutionResponse:
+      type: object
+      required:
+        - result
+      properties:
+        result:
+          type: object
+          description: Transformed data result
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExecutionLog'
+          description: Execution logs
+        performance:
+          $ref: '#/components/schemas/PerformanceMetrics'
+
+    ExecutionLog:
+      type: object
+      required:
+        - level
+        - message
+        - timestamp
+      properties:
+        level:
+          type: string
+          enum: [DEBUG, INFO, WARN, ERROR]
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        context:
+          type: object
+          additionalProperties: true
+
+    PerformanceMetrics:
+      type: object
+      properties:
+        executionTime:
+          type: integer
+          description: Execution time in milliseconds
+        memoryUsed:
+          type: integer
+          description: Memory used in bytes
+        cacheHit:
+          type: boolean
+          description: Whether cache was hit for StructureMap
+        transformationCount:
+          type: integer
+          description: Number of transformations performed
+
+    RetrievalOptions:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          minimum: 1000
+          maximum: 60000
+          default: 30000
+          description: Request timeout in milliseconds
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: Custom headers for HTTP retrieval
+        authentication:
+          $ref: '#/components/schemas/AuthConfig'
+        cache:
+          type: boolean
+          default: true
+          description: Whether to use cache for retrieval
+
+    AuthConfig:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [bearer, basic, apikey]
+        token:
+          type: string
+          description: Authentication token
+        username:
+          type: string
+          description: Username for basic auth
+        password:
+          type: string
+          description: Password for basic auth
+        apiKey:
+          type: string
+          description: API key for API key authentication
+
+    StructureMap:
+      type: object
+      description: FHIR StructureMap resource
+      required:
+        - resourceType
+        - url
+        - status
+      properties:
+        resourceType:
+          type: string
+          enum: [StructureMap]
+        id:
+          type: string
+        url:
+          type: string
+          format: uri
+        version:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+        structure:
+          type: array
+          items:
+            type: object
+        group:
+          type: array
+          items:
+            type: object
+
+    StructureMapInfo:
+      type: object
+      required:
+        - id
+        - url
+        - status
+        - source
+      properties:
+        id:
+          type: string
+          description: StructureMap identifier
+        url:
+          type: string
+          format: uri
+          description: Canonical URL
+        name:
+          type: string
+          description: Human-readable name
+        version:
+          type: string
+          description: Version string
+        status:
+          type: string
+          enum: [draft, active, retired, unknown]
+        source:
+          type: string
+          enum: [directory, url, cache]
+          description: Source where StructureMap was found
+        lastModified:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+        size:
+          type: integer
+          description: Size in bytes
+
+    StructureMapWithMetadata:
+      allOf:
+        - $ref: '#/components/schemas/StructureMap'
+        - type: object
+          properties:
+            metadata:
+              type: object
+              properties:
+                source:
+                  type: string
+                  enum: [directory, url, cache]
+                retrievedAt:
+                  type: string
+                  format: date-time
+                cacheHit:
+                  type: boolean
+                retrievalTime:
+                  type: integer
+                  description: Retrieval time in milliseconds
+
+    PaginationInfo:
+      type: object
+      required:
+        - total
+        - limit
+        - offset
+        - hasMore
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of available items
+        limit:
+          type: integer
+          minimum: 1
+          description: Number of items per page
+        offset:
+          type: integer
+          minimum: 0
+          description: Number of items skipped
+        hasMore:
+          type: boolean
+          description: Whether more items are available
+
+    HealthStatus:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        uptime:
+          type: integer
+          description: Uptime in seconds
+        checks:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [pass, fail, warn]
+              message:
+                type: string
+
+    ReadinessStatus:
+      type: object
+      required:
+        - ready
+        - timestamp
+      properties:
+        ready:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: object
+          additionalProperties:
+            type: boolean
+
+    LivenessStatus:
+      type: object
+      required:
+        - alive
+        - timestamp
+      properties:
+        alive:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+
+    MetricsResponse:
+      type: object
+      properties:
+        compilation:
+          type: object
+          properties:
+            totalRequests:
+              type: integer
+            successfulCompilations:
+              type: integer
+            failedCompilations:
+              type: integer
+            averageCompilationTime:
+              type: number
+        execution:
+          type: object
+          properties:
+            totalExecutions:
+              type: integer
+            successfulExecutions:
+              type: integer
+            failedExecutions:
+              type: integer
+            averageExecutionTime:
+              type: number
+        cache:
+          $ref: '#/components/schemas/CacheStatistics'
+
+    CacheStatistics:
+      type: object
+      properties:
+        compilation:
+          $ref: '#/components/schemas/CacheStats'
+        retrieval:
+          $ref: '#/components/schemas/CacheStats'
+        parse:
+          $ref: '#/components/schemas/CacheStats'
+
+    CacheStats:
+      type: object
+      properties:
+        hits:
+          type: integer
+          description: Number of cache hits
+        misses:
+          type: integer
+          description: Number of cache misses
+        hitRate:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Cache hit rate (0-1)
+        size:
+          type: integer
+          description: Current cache size
+        maxSize:
+          type: integer
+          description: Maximum cache size
+        evictions:
+          type: integer
+          description: Number of evictions
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Error type identifier
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+        requestId:
+          type: string
+          description: Request correlation ID
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer token authentication
+    
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key authentication
+    
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token
+          scopes:
+            fml:compile: Compile FML content to StructureMaps
+            fml:execute: Execute StructureMap transformations
+            fml:read: Read StructureMaps and metadata
+            fml:manage: Manage cache and system operations
+            fml:monitor: Access monitoring and metrics endpoints
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+  - OAuth2: [fml:compile, fml:execute, fml:read]
+
+tags:
+  - name: Compilation
+    description: FML compilation operations
+  - name: Execution
+    description: StructureMap execution operations
+  - name: Validation
+    description: FML validation operations
+  - name: StructureMap Management
+    description: StructureMap retrieval and management
+  - name: Cache Management
+    description: Cache operations and statistics
+  - name: Monitoring
+    description: Health checks and metrics
+
+externalDocs:
+  description: FML Runner Documentation
+  url: https://docs.fmlrunner.org
