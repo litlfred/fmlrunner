@@ -8,6 +8,8 @@ enum TokenType {
   MAP = 'MAP',
   USES = 'USES',
   IMPORTS = 'IMPORTS',
+  CONCEPTMAP = 'CONCEPTMAP',
+  PREFIX = 'PREFIX',
   GROUP = 'GROUP',
   INPUT = 'INPUT',
   RULE = 'RULE',
@@ -128,16 +130,51 @@ class FmlTokenizer {
     }
 
     // Handle comments
-    if (char === '/' && this.peek() === '/') {
-      while (!this.isAtEnd() && this.peek() !== '\n') {
-        this.advance();
+    if (char === '/') {
+      if (this.peek() === '/') {
+        // Single-line comment or documentation comment
+        if (this.position + 1 < this.input.length && this.input.charAt(this.position + 1) === '/') {
+          // Documentation comment: ///
+          this.advance(); // Skip second /
+          while (!this.isAtEnd() && this.peek() !== '\n') {
+            this.advance();
+          }
+          return {
+            type: TokenType.COMMENT,
+            value: this.input.substring(start, this.position),
+            line: startLine,
+            column: startColumn
+          };
+        } else {
+          // Regular single-line comment: //
+          while (!this.isAtEnd() && this.peek() !== '\n') {
+            this.advance();
+          }
+          return {
+            type: TokenType.COMMENT,
+            value: this.input.substring(start, this.position),
+            line: startLine,
+            column: startColumn
+          };
+        }
+      } else if (this.peek() === '*') {
+        // Multi-line comment: /* ... */
+        this.advance(); // Skip *
+        while (!this.isAtEnd()) {
+          if (this.peek() === '*' && this.position + 1 < this.input.length && this.input.charAt(this.position + 1) === '/') {
+            this.advance(); // Skip *
+            this.advance(); // Skip /
+            break;
+          }
+          this.advance();
+        }
+        return {
+          type: TokenType.COMMENT,
+          value: this.input.substring(start, this.position),
+          line: startLine,
+          column: startColumn
+        };
       }
-      return {
-        type: TokenType.COMMENT,
-        value: this.input.substring(start, this.position),
-        line: startLine,
-        column: startColumn
-      };
     }
 
     // Handle strings
@@ -216,6 +253,8 @@ class FmlTokenizer {
       'MAP': TokenType.MAP,
       'USES': TokenType.USES,
       'IMPORTS': TokenType.IMPORTS,
+      'CONCEPTMAP': TokenType.CONCEPTMAP,
+      'PREFIX': TokenType.PREFIX,
       'GROUP': TokenType.GROUP,
       'INPUT': TokenType.INPUT,
       'RULE': TokenType.RULE,
@@ -374,6 +413,16 @@ class FmlParser {
       this.parseImports();
     }
 
+    // Parse optional prefix declarations
+    while (this.match(TokenType.PREFIX)) {
+      this.parsePrefix();
+    }
+
+    // Parse optional conceptmap declarations
+    while (this.match(TokenType.CONCEPTMAP)) {
+      this.parseConceptMap();
+    }
+
     // Parse groups
     while (this.match(TokenType.GROUP)) {
       const group = this.parseGroup();
@@ -432,6 +481,32 @@ class FmlParser {
     // imports "url"
     const url = this.consume(TokenType.STRING, "Expected URL after 'imports'").value;
     // TODO: Store imports information in StructureMap
+  }
+
+  private parsePrefix(): void {
+    // prefix system = "url"
+    const prefix = this.consume(TokenType.IDENTIFIER, "Expected prefix name after 'prefix'").value;
+    this.consume(TokenType.EQUALS, "Expected '=' after prefix name");
+    const url = this.consume(TokenType.STRING, "Expected URL after '='").value;
+    // TODO: Store prefix information in StructureMap
+  }
+
+  private parseConceptMap(): void {
+    // conceptmap "url" { ... }
+    const url = this.consume(TokenType.STRING, "Expected URL after 'conceptmap'").value;
+    this.consume(TokenType.LBRACE, "Expected '{' after conceptmap URL");
+    
+    // Skip content inside braces for now - conceptmap parsing is complex
+    let braceCount = 1;
+    while (!this.isAtEnd() && braceCount > 0) {
+      if (this.check(TokenType.LBRACE)) {
+        braceCount++;
+      } else if (this.check(TokenType.RBRACE)) {
+        braceCount--;
+      }
+      this.advance();
+    }
+    // TODO: Store conceptmap information in StructureMap
   }
 
   private parseGroup(): StructureMapGroup {
