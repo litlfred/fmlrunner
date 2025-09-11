@@ -1,7 +1,7 @@
 {
   "name": "fmlrunner",
   "version": "0.1.0",
-  "description": "Core FML (FHIR Mapping Language) library for compiling and executing FHIR StructureMaps with JSON schema validation",
+  "description": "Core FML (FHIR Mapping Language) library for compiling and executing FHIR StructureMaps with comprehensive validation and terminology support",
   "keywords": [
     "fhir",
     "fml",
@@ -10,8 +10,16 @@
     "healthcare",
     "structuremap",
     "hl7",
-    "jsonschema"
+    "jsonschema",
+    "conceptmap",
+    "valueset",
+    "terminology",
+    "fhirpath"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "author": "Carl Leitner",
   "license": "MIT",
   "homepage": "https://github.com/litlfred/fmlrunner#readme",
@@ -30,14 +38,17 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist/",
-    "schemas/"
+    "schemas/",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "clean": "rm -rf dist",
-    "validate-schemas": "ajv compile -s schemas/*.json"
+    "validate-schemas": "ajv compile -s schemas/*.json",
+    "prepublishOnly": "npm run clean && npm run build && npm run test"
   },
   "devDependencies": {
     "@types/jest": "^29.0.0",

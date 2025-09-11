@@ -22,9 +22,34 @@ FML Runner is designed as a library component for larger application frameworks,
 
 ### Install from npm (Production)
 
+**Core Library:**
 ```bash
-npm install fml-runner
+npm install fmlrunner
 ```
+
+**REST API Server:**
+```bash
+npm install -g fmlrunner-rest
+```
+
+**Model Context Protocol Interface:**
+```bash
+npm install -g fmlrunner-mcp
+```
+
+**Web Interface:**
+```bash
+npm install fmlrunner-web
+```
+
+### Package Overview
+
+| Package | Description | Status |
+|---------|-------------|--------|
+| [`fmlrunner`](https://www.npmjs.com/package/fmlrunner) | Core FML library for compilation and execution | [![npm](https://img.shields.io/npm/v/fmlrunner)](https://www.npmjs.com/package/fmlrunner) |
+| [`fmlrunner-rest`](https://www.npmjs.com/package/fmlrunner-rest) | REST API server with FHIR endpoints | [![npm](https://img.shields.io/npm/v/fmlrunner-rest)](https://www.npmjs.com/package/fmlrunner-rest) |
+| [`fmlrunner-mcp`](https://www.npmjs.com/package/fmlrunner-mcp) | Model Context Protocol interface for AI tools | [![npm](https://img.shields.io/npm/v/fmlrunner-mcp)](https://www.npmjs.com/package/fmlrunner-mcp) |
+| [`fmlrunner-web`](https://www.npmjs.com/package/fmlrunner-web) | React web interface and documentation | [![npm](https://img.shields.io/npm/v/fmlrunner-web)](https://www.npmjs.com/package/fmlrunner-web) |
 
 ### Install from Source (Development)
 

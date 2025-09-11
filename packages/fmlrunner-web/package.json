@@ -1,7 +1,7 @@
 {
   "name": "fmlrunner-web",
   "version": "0.1.0",
-  "description": "React web interface for FML Runner with OpenAPI documentation and interactive execution",
+  "description": "React web interface for FML Runner with interactive OpenAPI documentation, FML playground, and FHIR mapping execution environment",
   "keywords": [
     "fhir",
     "fml",
@@ -9,8 +9,14 @@
     "web",
     "openapi",
     "swagger",
-    "frontend"
+    "frontend",
+    "playground",
+    "interactive"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "author": "Carl Leitner",
   "license": "MIT",
   "homepage": "https://github.com/litlfred/fmlrunner#readme",
@@ -25,13 +31,20 @@
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
   },
+  "files": [
+    "dist/",
+    "public/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite",
     "preview": "vite preview",
     "test": "vitest",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run lint && npm run type-check && npm run build"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.0.0",

@@ -1,15 +1,22 @@
 {
   "name": "fmlrunner-mcp",
   "version": "0.1.0",
-  "description": "Model Context Protocol (MCP) interface for FML Runner with JSON schema-defined endpoints",
+  "description": "Model Context Protocol (MCP) interface for FML Runner providing AI-compatible tools for FHIR mapping and transformation with JSON schema validation",
   "keywords": [
     "fhir",
     "fml",
     "mcp",
     "model-context-protocol",
     "jsonschema",
-    "ai"
+    "ai",
+    "claude",
+    "anthropic",
+    "tools"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "author": "Carl Leitner",
   "license": "MIT",
   "homepage": "https://github.com/litlfred/fmlrunner#readme",
@@ -31,7 +38,9 @@
   },
   "files": [
     "dist/",
-    "schemas/"
+    "schemas/",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
@@ -39,7 +48,8 @@
     "lint": "eslint src/**/*.ts",
     "clean": "rm -rf dist",
     "start": "node dist/server.js",
-    "dev": "tsc && node dist/server.js"
+    "dev": "tsc && node dist/server.js",
+    "prepublishOnly": "npm run clean && npm run build && npm run test"
   },
   "devDependencies": {
     "@types/jest": "^29.0.0",

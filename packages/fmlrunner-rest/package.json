@@ -1,7 +1,7 @@
 {
   "name": "fmlrunner-rest",
   "version": "0.1.0",
-  "description": "REST API server for FML Runner with FHIR-compliant endpoints",
+  "description": "REST API server for FML Runner with FHIR-compliant endpoints, CRUD operations for StructureMaps, ConceptMaps, ValueSets, and Bundle processing",
   "keywords": [
     "fhir",
     "fml",
@@ -9,8 +9,15 @@
     "api",
     "server",
     "structuremap",
-    "openapi"
+    "openapi",
+    "express",
+    "crud",
+    "bundle"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "author": "Carl Leitner",
   "license": "MIT",
   "homepage": "https://github.com/litlfred/fmlrunner#readme",
@@ -31,7 +38,9 @@
   },
   "files": [
     "dist/",
-    "openapi.yaml"
+    "openapi.yaml",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
@@ -39,7 +48,8 @@
     "lint": "eslint src/**/*.ts",
     "clean": "rm -rf dist",
     "start": "node dist/server.js",
-    "dev": "tsc && node dist/server.js"
+    "dev": "tsc && node dist/server.js",
+    "prepublishOnly": "npm run clean && npm run build && npm run test"
   },
   "devDependencies": {
     "@types/cors": "^2.8.0",

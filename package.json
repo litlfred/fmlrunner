@@ -13,7 +13,19 @@
     "clean": "npm run clean --workspaces --if-present",
     "dev": "concurrently \"npm run dev --workspace=packages/fmlrunner-web\" \"npm run dev --workspace=packages/fmlrunner-rest\"",
     "build:web": "npm run build --workspace=packages/fmlrunner-web",
-    "deploy:web": "npm run build:web && gh-pages -d packages/fmlrunner-web/dist"
+    "deploy:web": "npm run build:web && gh-pages -d packages/fmlrunner-web/dist",
+    "version:patch": "node scripts/version.js bump patch",
+    "version:minor": "node scripts/version.js bump minor", 
+    "version:major": "node scripts/version.js bump major",
+    "version:set": "node scripts/version.js set",
+    "version:current": "node scripts/version.js current",
+    "publish:all": "npm run build && node scripts/version.js publish",
+    "publish:dry-run": "npm run build && node scripts/version.js publish --dry-run",
+    "prepare:publish": "node scripts/version.js prepare-publish",
+    "restore:dev": "node scripts/version.js restore-dev",
+    "prerelease": "npm run lint && npm run test && npm run build",
+    "release": "npm run prerelease && npm run publish:all",
+    "tag": "node scripts/version.js tag"
   },
   "devDependencies": {
     "gh-pages": "^6.1.0",

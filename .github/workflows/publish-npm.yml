@@ -1,0 +1,202 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version increment type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      publish_to_npm:
+        description: 'Publish to NPM registry'
+        required: true
+        default: true
+        type: boolean
+      dry_run:
+        description: 'Dry run (test publishing without actually publishing)'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm-publishing
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Configure Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Update package versions
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        echo "Updating versions with type: ${{ github.event.inputs.version_type }}"
+        node scripts/version.js bump ${{ github.event.inputs.version_type }}
+        
+        NEW_VERSION=$(node scripts/version.js current)
+        echo "New version: $NEW_VERSION"
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+    - name: Extract version from release
+      if: github.event_name == 'release'
+      run: |
+        RELEASE_VERSION="${{ github.event.release.tag_name }}"
+        # Remove 'v' prefix if present
+        VERSION=${RELEASE_VERSION#v}
+        echo "Setting version to: $VERSION"
+        
+        node scripts/version.js set $VERSION
+        echo "NEW_VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Run quality checks
+      run: |
+        echo "Running linting..."
+        npm run lint
+        
+        echo "Running tests..."
+        npm run test
+        
+        echo "Building packages..."
+        npm run build
+
+    - name: Verify package contents
+      run: |
+        echo "=== Package Contents Verification ==="
+        for pkg in packages/*/; do
+          echo "Checking $pkg..."
+          cd "$pkg"
+          npm pack --dry-run
+          cd ../..
+        done
+
+    - name: Publish packages (dry run)
+      if: github.event.inputs.dry_run == 'true'
+      run: |
+        echo "=== DRY RUN: Publishing packages ==="
+        node scripts/version.js publish --dry-run
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: Publish packages to NPM
+      if: github.event.inputs.publish_to_npm == 'true' && github.event.inputs.dry_run != 'true'
+      run: |
+        echo "=== Publishing packages to NPM ==="
+        node scripts/version.js publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: Commit version changes
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run != 'true'
+      run: |
+        git add .
+        git commit -m "chore: bump version to ${{ env.NEW_VERSION }}" || echo "No changes to commit"
+        git tag "v${{ env.NEW_VERSION }}"
+        git push origin HEAD --tags
+
+    - name: Create GitHub Release
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to_npm == 'true' && github.event.inputs.dry_run != 'true'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: "v${{ env.NEW_VERSION }}"
+        release_name: "Release v${{ env.NEW_VERSION }}"
+        body: |
+          ## Release v${{ env.NEW_VERSION }}
+          
+          Published packages to NPM:
+          - 📦 [fmlrunner@${{ env.NEW_VERSION }}](https://www.npmjs.com/package/fmlrunner)
+          - 📦 [fmlrunner-rest@${{ env.NEW_VERSION }}](https://www.npmjs.com/package/fmlrunner-rest)
+          - 📦 [fmlrunner-mcp@${{ env.NEW_VERSION }}](https://www.npmjs.com/package/fmlrunner-mcp)
+          - 📦 [fmlrunner-web@${{ env.NEW_VERSION }}](https://www.npmjs.com/package/fmlrunner-web)
+          
+          ### Installation
+          ```bash
+          npm install fmlrunner
+          npm install -g fmlrunner-rest
+          npm install -g fmlrunner-mcp
+          ```
+          
+          ### Changes
+          - Version bump: ${{ github.event.inputs.version_type }}
+          - All packages updated to v${{ env.NEW_VERSION }}
+        draft: false
+        prerelease: false
+
+    - name: Generate Publishing Summary
+      if: always()
+      run: |
+        echo "## NPM Publishing Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+          echo "🧪 **Mode:** Dry Run (no actual publishing)" >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ github.event.inputs.publish_to_npm }}" == "true" ]; then
+          echo "📦 **Mode:** Published to NPM Registry" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "🔍 **Mode:** Build and Test Only" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Package | Version | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------|---------|--------|" >> $GITHUB_STEP_SUMMARY
+        
+        for pkg in fmlrunner fmlrunner-rest fmlrunner-mcp fmlrunner-web; do
+          version=$(node -p "require('./packages/$pkg/package.json').version" 2>/dev/null || echo "unknown")
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "| $pkg | $version | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| $pkg | $version | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ github.event.inputs.publish_to_npm }}" == "true" ] && [ "${{ github.event.inputs.dry_run }}" != "true" ] && [ "${{ job.status }}" == "success" ]; then
+          echo "### 🎉 Packages Available" >> $GITHUB_STEP_SUMMARY
+          echo "- [fmlrunner](https://www.npmjs.com/package/fmlrunner)" >> $GITHUB_STEP_SUMMARY
+          echo "- [fmlrunner-rest](https://www.npmjs.com/package/fmlrunner-rest)" >> $GITHUB_STEP_SUMMARY
+          echo "- [fmlrunner-mcp](https://www.npmjs.com/package/fmlrunner-mcp)" >> $GITHUB_STEP_SUMMARY
+          echo "- [fmlrunner-web](https://www.npmjs.com/package/fmlrunner-web)" >> $GITHUB_STEP_SUMMARY
+        fi
+
+  notify:
+    needs: publish
+    runs-on: ubuntu-latest
+    if: always() && needs.publish.result == 'success' && github.event.inputs.publish_to_npm == 'true' && github.event.inputs.dry_run != 'true'
+    
+    steps:
+    - name: Notify Success
+      run: |
+        echo "✅ Successfully published FML Runner packages to NPM!"
+        echo "Version: ${{ env.NEW_VERSION }}"
+        echo "Packages: fmlrunner, fmlrunner-rest, fmlrunner-mcp, fmlrunner-web"
