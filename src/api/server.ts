@@ -36,6 +36,37 @@ export class FmlRunnerApi {
     apiRouter.post('/execute', this.executeStructureMap.bind(this));
     apiRouter.get('/structuremap/:reference', this.getStructureMap.bind(this));
 
+    // FHIR Bundle processing endpoint
+    apiRouter.post('/Bundle', this.processBundle.bind(this));
+    apiRouter.get('/Bundle/summary', this.getBundleSummary.bind(this));
+
+    // FHIR-compliant ConceptMap CRUD endpoints
+    apiRouter.get('/ConceptMap', this.searchConceptMaps.bind(this));
+    apiRouter.get('/ConceptMap/:id', this.getConceptMapById.bind(this));
+    apiRouter.post('/ConceptMap', this.createConceptMap.bind(this));
+    apiRouter.put('/ConceptMap/:id', this.updateConceptMap.bind(this));
+    apiRouter.delete('/ConceptMap/:id', this.deleteConceptMap.bind(this));
+    apiRouter.post('/ConceptMap/:operation(\\$translate)', this.translateOperation.bind(this));
+
+    // FHIR-compliant ValueSet CRUD endpoints
+    apiRouter.get('/ValueSet', this.searchValueSets.bind(this));
+    apiRouter.get('/ValueSet/:id', this.getValueSetById.bind(this));
+    apiRouter.post('/ValueSet', this.createValueSet.bind(this));
+    apiRouter.put('/ValueSet/:id', this.updateValueSet.bind(this));
+    apiRouter.delete('/ValueSet/:id', this.deleteValueSet.bind(this));
+    apiRouter.post('/ValueSet/:operation(\\$expand)', this.expandValueSetOperation.bind(this));
+    apiRouter.post('/ValueSet/:operation(\\$validate-code)', this.validateCodeOperation.bind(this));
+
+    // FHIR-compliant CodeSystem CRUD endpoints
+    apiRouter.get('/CodeSystem', this.searchCodeSystems.bind(this));
+    apiRouter.get('/CodeSystem/:id', this.getCodeSystemById.bind(this));
+    apiRouter.post('/CodeSystem', this.createCodeSystem.bind(this));
+    apiRouter.put('/CodeSystem/:id', this.updateCodeSystem.bind(this));
+    apiRouter.delete('/CodeSystem/:id', this.deleteCodeSystem.bind(this));
+    apiRouter.post('/CodeSystem/:operation(\\$lookup)', this.lookupOperation.bind(this));
+    apiRouter.post('/CodeSystem/:operation(\\$subsumes)', this.subsumesOperation.bind(this));
+    apiRouter.post('/CodeSystem/:operation(\\$validate-code)', this.validateCodeInCodeSystemOperation.bind(this));
+
     // FHIR-compliant StructureDefinition CRUD endpoints
     apiRouter.get('/StructureDefinition', this.searchStructureDefinitions.bind(this));
     apiRouter.get('/StructureDefinition/:id', this.getStructureDefinitionById.bind(this));
@@ -712,8 +743,982 @@ export class FmlRunnerApi {
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: '0.1.0'
+      version: '0.1.0',
+      resources: this.fmlRunner.getBundleStats()
     });
+  }
+
+  // ============================================
+  // BUNDLE PROCESSING ENDPOINTS
+  // ============================================
+
+  /**
+   * Process FHIR Bundle and load resources
+   */
+  private async processBundle(req: Request, res: Response): Promise<void> {
+    try {
+      const bundle = req.body;
+      
+      if (!bundle || bundle.resourceType !== 'Bundle') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a valid Bundle resource'
+          }]
+        });
+        return;
+      }
+
+      const result = this.fmlRunner.processBundle(bundle);
+      
+      if (result.success) {
+        res.status(201).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'information',
+            code: 'informational',
+            diagnostics: `Successfully processed bundle. Loaded: ${result.processed.structureMaps} StructureMaps, ${result.processed.structureDefinitions} StructureDefinitions, ${result.processed.conceptMaps} ConceptMaps, ${result.processed.valueSets} ValueSets, ${result.processed.codeSystems} CodeSystems`
+          }]
+        });
+      } else {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'processing',
+            diagnostics: `Bundle processing failed: ${result.errors.join(', ')}`
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Get bundle summary of loaded resources
+   */
+  private async getBundleSummary(req: Request, res: Response): Promise<void> {
+    try {
+      const summaryBundle = this.fmlRunner.createResourceSummaryBundle();
+      res.json(summaryBundle);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  // ============================================
+  // CONCEPTMAP CRUD ENDPOINTS
+  // ============================================
+
+  /**
+   * Search ConceptMaps
+   */
+  private async searchConceptMaps(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, status, url, source, target, _count = '20', _offset = '0' } = req.query;
+      
+      const conceptMaps = this.fmlRunner.searchConceptMaps({
+        name: name as string,
+        status: status as string,
+        url: url as string,
+        source: source as string,
+        target: target as string
+      });
+
+      const bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: conceptMaps.length,
+        entry: conceptMaps.map(cm => ({
+          resource: cm
+        }))
+      };
+
+      res.json(bundle);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Get ConceptMap by ID
+   */
+  private async getConceptMapById(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const conceptMap = this.fmlRunner.getConceptMap(id);
+      
+      if (conceptMap) {
+        res.json(conceptMap);
+      } else {
+        res.status(404).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'not-found',
+            diagnostics: `ConceptMap with id '${id}' not found`
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Create ConceptMap
+   */
+  private async createConceptMap(req: Request, res: Response): Promise<void> {
+    try {
+      const conceptMap = req.body;
+      
+      if (!conceptMap || conceptMap.resourceType !== 'ConceptMap') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a valid ConceptMap resource'
+          }]
+        });
+        return;
+      }
+
+      if (!conceptMap.id) {
+        conceptMap.id = 'cm-' + Date.now();
+      }
+
+      this.fmlRunner.registerConceptMap(conceptMap);
+      res.status(201).json(conceptMap);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Update ConceptMap
+   */
+  private async updateConceptMap(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const conceptMap = req.body;
+      
+      if (!conceptMap || conceptMap.resourceType !== 'ConceptMap') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a valid ConceptMap resource'
+          }]
+        });
+        return;
+      }
+
+      conceptMap.id = id;
+      this.fmlRunner.registerConceptMap(conceptMap);
+      res.json(conceptMap);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Delete ConceptMap
+   */
+  private async deleteConceptMap(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const success = this.fmlRunner.removeConceptMap(id);
+      
+      if (success) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'not-found',
+            diagnostics: `ConceptMap with id '${id}' not found`
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * ConceptMap $translate operation
+   */
+  private async translateOperation(req: Request, res: Response): Promise<void> {
+    try {
+      const parameters = req.body;
+      
+      if (!parameters || parameters.resourceType !== 'Parameters') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a FHIR Parameters resource'
+          }]
+        });
+        return;
+      }
+
+      let system: string | undefined;
+      let code: string | undefined;
+      let target: string | undefined;
+
+      if (parameters.parameter) {
+        for (const param of parameters.parameter) {
+          if (param.name === 'system') {
+            system = param.valueUri || param.valueString;
+          } else if (param.name === 'code') {
+            code = param.valueCode || param.valueString;
+          } else if (param.name === 'target') {
+            target = param.valueUri || param.valueString;
+          }
+        }
+      }
+
+      if (!system || !code) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Parameters must include both "system" and "code" parameters'
+          }]
+        });
+        return;
+      }
+
+      const translations = this.fmlRunner.translateCode(system, code, target);
+      
+      const resultParameters = {
+        resourceType: 'Parameters',
+        parameter: translations.map(t => ({
+          name: 'match',
+          part: [
+            { name: 'equivalence', valueCode: t.equivalence },
+            ...(t.system ? [{ name: 'concept', valueCoding: { system: t.system, code: t.code, display: t.display } }] : [])
+          ]
+        }))
+      };
+
+      res.json(resultParameters);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  // ============================================
+  // VALUESET CRUD ENDPOINTS
+  // ============================================
+
+  /**
+   * Search ValueSets
+   */
+  private async searchValueSets(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, status, url, publisher, jurisdiction, _count = '20', _offset = '0' } = req.query;
+      
+      const valueSets = this.fmlRunner.searchValueSets({
+        name: name as string,
+        status: status as string,
+        url: url as string,
+        publisher: publisher as string,
+        jurisdiction: jurisdiction as string
+      });
+
+      const bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: valueSets.length,
+        entry: valueSets.map(vs => ({
+          resource: vs
+        }))
+      };
+
+      res.json(bundle);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Get ValueSet by ID
+   */
+  private async getValueSetById(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const valueSet = this.fmlRunner.getValueSet(id);
+      
+      if (valueSet) {
+        res.json(valueSet);
+      } else {
+        res.status(404).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'not-found',
+            diagnostics: `ValueSet with id '${id}' not found`
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Create ValueSet
+   */
+  private async createValueSet(req: Request, res: Response): Promise<void> {
+    try {
+      const valueSet = req.body;
+      
+      if (!valueSet || valueSet.resourceType !== 'ValueSet') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a valid ValueSet resource'
+          }]
+        });
+        return;
+      }
+
+      if (!valueSet.id) {
+        valueSet.id = 'vs-' + Date.now();
+      }
+
+      this.fmlRunner.registerValueSet(valueSet);
+      res.status(201).json(valueSet);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Update ValueSet
+   */
+  private async updateValueSet(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const valueSet = req.body;
+      
+      if (!valueSet || valueSet.resourceType !== 'ValueSet') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a valid ValueSet resource'
+          }]
+        });
+        return;
+      }
+
+      valueSet.id = id;
+      this.fmlRunner.registerValueSet(valueSet);
+      res.json(valueSet);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Delete ValueSet
+   */
+  private async deleteValueSet(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const success = this.fmlRunner.removeValueSet(id);
+      
+      if (success) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'not-found',
+            diagnostics: `ValueSet with id '${id}' not found`
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * ValueSet $expand operation
+   */
+  private async expandValueSetOperation(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const parameters = req.body;
+      
+      let count: number | undefined;
+      let offset: number | undefined;
+
+      if (parameters?.parameter) {
+        for (const param of parameters.parameter) {
+          if (param.name === 'count') {
+            count = param.valueInteger;
+          } else if (param.name === 'offset') {
+            offset = param.valueInteger;
+          }
+        }
+      }
+
+      const expandedValueSet = this.fmlRunner.expandValueSet(id, count, offset);
+      
+      if (expandedValueSet) {
+        res.json(expandedValueSet);
+      } else {
+        res.status(404).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'not-found',
+            diagnostics: `ValueSet with id '${id}' not found`
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * ValueSet $validate-code operation
+   */
+  private async validateCodeOperation(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const parameters = req.body;
+      
+      let system: string | undefined;
+      let code: string | undefined;
+      let display: string | undefined;
+
+      if (parameters?.parameter) {
+        for (const param of parameters.parameter) {
+          if (param.name === 'system') {
+            system = param.valueUri || param.valueString;
+          } else if (param.name === 'code') {
+            code = param.valueCode || param.valueString;
+          } else if (param.name === 'display') {
+            display = param.valueString;
+          }
+        }
+      }
+
+      const validation = this.fmlRunner.validateCodeInValueSet(id, system, code, display);
+      
+      const resultParameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'result', valueBoolean: validation.result },
+          ...(validation.message ? [{ name: 'message', valueString: validation.message }] : [])
+        ]
+      };
+
+      res.json(resultParameters);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  // ============================================
+  // CODESYSTEM CRUD ENDPOINTS
+  // ============================================
+
+  /**
+   * Search CodeSystems
+   */
+  private async searchCodeSystems(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, status, url, system, publisher, content, _count = '20', _offset = '0' } = req.query;
+      
+      const codeSystems = this.fmlRunner.searchCodeSystems({
+        name: name as string,
+        status: status as string,
+        url: url as string,
+        system: system as string,
+        publisher: publisher as string,
+        content: content as string
+      });
+
+      const bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: codeSystems.length,
+        entry: codeSystems.map(cs => ({
+          resource: cs
+        }))
+      };
+
+      res.json(bundle);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Get CodeSystem by ID
+   */
+  private async getCodeSystemById(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const codeSystem = this.fmlRunner.getCodeSystem(id);
+      
+      if (codeSystem) {
+        res.json(codeSystem);
+      } else {
+        res.status(404).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'not-found',
+            diagnostics: `CodeSystem with id '${id}' not found`
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Create CodeSystem
+   */
+  private async createCodeSystem(req: Request, res: Response): Promise<void> {
+    try {
+      const codeSystem = req.body;
+      
+      if (!codeSystem || codeSystem.resourceType !== 'CodeSystem') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a valid CodeSystem resource'
+          }]
+        });
+        return;
+      }
+
+      if (!codeSystem.id) {
+        codeSystem.id = 'cs-' + Date.now();
+      }
+
+      this.fmlRunner.registerCodeSystem(codeSystem);
+      res.status(201).json(codeSystem);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Update CodeSystem
+   */
+  private async updateCodeSystem(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const codeSystem = req.body;
+      
+      if (!codeSystem || codeSystem.resourceType !== 'CodeSystem') {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must be a valid CodeSystem resource'
+          }]
+        });
+        return;
+      }
+
+      codeSystem.id = id;
+      this.fmlRunner.registerCodeSystem(codeSystem);
+      res.json(codeSystem);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Delete CodeSystem
+   */
+  private async deleteCodeSystem(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const success = this.fmlRunner.removeCodeSystem(id);
+      
+      if (success) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'not-found',
+            diagnostics: `CodeSystem with id '${id}' not found`
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * CodeSystem $lookup operation
+   */
+  private async lookupOperation(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const parameters = req.body;
+      
+      let code: string | undefined;
+      let property: string[] | undefined;
+
+      if (parameters?.parameter) {
+        for (const param of parameters.parameter) {
+          if (param.name === 'code') {
+            code = param.valueCode || param.valueString;
+          } else if (param.name === 'property') {
+            property = property || [];
+            property.push(param.valueCode || param.valueString);
+          }
+        }
+      }
+
+      if (!code) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Parameters must include "code" parameter'
+          }]
+        });
+        return;
+      }
+
+      const lookup = this.fmlRunner.lookupConcept(id, code, property);
+      
+      if (lookup) {
+        const resultParameters = {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'name', valueString: lookup.name },
+            ...(lookup.display ? [{ name: 'display', valueString: lookup.display }] : []),
+            ...(lookup.definition ? [{ name: 'definition', valueString: lookup.definition }] : []),
+            ...(lookup.designation ? lookup.designation.map((d: any) => ({
+              name: 'designation',
+              part: [
+                ...(d.language ? [{ name: 'language', valueCode: d.language }] : []),
+                ...(d.use ? [{ name: 'use', valueCoding: d.use }] : []),
+                { name: 'value', valueString: d.value }
+              ]
+            })) : []),
+            ...(lookup.property ? lookup.property.map((p: any) => ({
+              name: 'property',
+              part: [
+                { name: 'code', valueCode: p.code },
+                ...(p.valueCode ? [{ name: 'value', valueCode: p.valueCode }] : []),
+                ...(p.valueString ? [{ name: 'value', valueString: p.valueString }] : []),
+                ...(p.valueInteger ? [{ name: 'value', valueInteger: p.valueInteger }] : []),
+                ...(p.valueBoolean !== undefined ? [{ name: 'value', valueBoolean: p.valueBoolean }] : [])
+              ]
+            })) : [])
+          ]
+        };
+
+        res.json(resultParameters);
+      } else {
+        res.status(404).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'not-found',
+            diagnostics: `Code '${code}' not found in CodeSystem '${id}'`
+          }]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * CodeSystem $subsumes operation
+   */
+  private async subsumesOperation(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const parameters = req.body;
+      
+      let codeA: string | undefined;
+      let codeB: string | undefined;
+
+      if (parameters?.parameter) {
+        for (const param of parameters.parameter) {
+          if (param.name === 'codeA') {
+            codeA = param.valueCode || param.valueString;
+          } else if (param.name === 'codeB') {
+            codeB = param.valueCode || param.valueString;
+          }
+        }
+      }
+
+      if (!codeA || !codeB) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Parameters must include both "codeA" and "codeB" parameters'
+          }]
+        });
+        return;
+      }
+
+      const result = this.fmlRunner.testSubsumption(id, codeA, codeB);
+      
+      const resultParameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'outcome', valueCode: result }
+        ]
+      };
+
+      res.json(resultParameters);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * CodeSystem $validate-code operation
+   */
+  private async validateCodeInCodeSystemOperation(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const parameters = req.body;
+      
+      let code: string | undefined;
+      let display: string | undefined;
+
+      if (parameters?.parameter) {
+        for (const param of parameters.parameter) {
+          if (param.name === 'code') {
+            code = param.valueCode || param.valueString;
+          } else if (param.name === 'display') {
+            display = param.valueString;
+          }
+        }
+      }
+
+      if (!code) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Parameters must include "code" parameter'
+          }]
+        });
+        return;
+      }
+
+      const validation = this.fmlRunner.validateCodeInCodeSystem(id, code, display);
+      
+      const resultParameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'result', valueBoolean: validation.result },
+          ...(validation.display ? [{ name: 'display', valueString: validation.display }] : []),
+          ...(validation.message ? [{ name: 'message', valueString: validation.message }] : [])
+        ]
+      };
+
+      res.json(resultParameters);
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
   }
 
   /**

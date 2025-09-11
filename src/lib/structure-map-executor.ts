@@ -1,14 +1,33 @@
 import { StructureMap, ExecutionResult, ExecutionOptions, EnhancedExecutionResult } from '../types';
 import { ValidationService } from './validation-service';
+import { ConceptMapService } from './conceptmap-service';
+import { ValueSetService } from './valueset-service';
+import { CodeSystemService } from './codesystem-service';
 
 /**
  * StructureMap execution engine - executes StructureMaps on input data
  */
 export class StructureMapExecutor {
   private validationService: ValidationService;
+  private conceptMapService?: ConceptMapService;
+  private valueSetService?: ValueSetService;
+  private codeSystemService?: CodeSystemService;
 
   constructor() {
     this.validationService = new ValidationService();
+  }
+
+  /**
+   * Set terminology services for advanced transformation support
+   */
+  setTerminologyServices(
+    conceptMapService: ConceptMapService,
+    valueSetService: ValueSetService,
+    codeSystemService: CodeSystemService
+  ): void {
+    this.conceptMapService = conceptMapService;
+    this.valueSetService = valueSetService;
+    this.codeSystemService = codeSystemService;
   }
 
   /**
@@ -116,12 +135,261 @@ export class StructureMapExecutor {
         const targetElement = rule.target[0].element;
         
         if (sourceElement && targetElement && source[sourceElement] !== undefined) {
-          target[targetElement] = source[sourceElement];
+          let value = source[sourceElement];
+          
+          // Check if target has transform operations
+          const targetRule = rule.target[0];
+          if (targetRule.transform) {
+            value = this.applyTransform(targetRule.transform, value, targetRule.parameter);
+          }
+          
+          target[targetElement] = value;
         }
       }
     } catch (error) {
       console.error('Error executing rule:', error);
     }
+  }
+
+  /**
+   * Apply transform operations including terminology operations
+   */
+  private applyTransform(transform: string, value: any, parameters?: any[]): any {
+    switch (transform) {
+      case 'copy':
+        return value;
+        
+      case 'translate':
+        return this.applyTranslateTransform(value, parameters);
+        
+      case 'evaluate':
+        // FHIRPath evaluation - basic implementation
+        return this.evaluateFhirPath(value, parameters);
+        
+      case 'create':
+        // Create a new resource/element
+        return this.createResource(parameters);
+        
+      case 'reference':
+        // Create a reference
+        return this.createReference(value, parameters);
+        
+      case 'dateOp':
+        // Date operations
+        return this.applyDateOperation(value, parameters);
+        
+      case 'append':
+        // String append operation
+        return this.appendStrings(value, parameters);
+        
+      case 'cast':
+        // Type casting
+        return this.castValue(value, parameters);
+        
+      default:
+        console.warn(`Unknown transform: ${transform}`);
+        return value;
+    }
+  }
+
+  /**
+   * Apply translate transform using ConceptMaps
+   */
+  private applyTranslateTransform(value: any, parameters?: any[]): any {
+    if (!this.conceptMapService || !parameters || parameters.length < 2) {
+      return value;
+    }
+
+    try {
+      const sourceSystem = parameters[0];
+      const targetSystem = parameters[1];
+      
+      if (typeof value === 'object' && value.code && value.system) {
+        // Handle Coding input
+        const translations = this.conceptMapService.translate(
+          value.system,
+          value.code,
+          targetSystem
+        );
+        
+        if (translations.length > 0) {
+          const translation = translations[0];
+          return {
+            system: translation.system || targetSystem,
+            code: translation.code,
+            display: translation.display
+          };
+        }
+      } else if (typeof value === 'string') {
+        // Handle string code input
+        const translations = this.conceptMapService.translate(
+          sourceSystem,
+          value,
+          targetSystem
+        );
+        
+        if (translations.length > 0) {
+          return translations[0].code;
+        }
+      }
+    } catch (error) {
+      console.error('Error in translate transform:', error);
+    }
+    
+    return value;
+  }
+
+  /**
+   * Basic FHIRPath evaluation
+   */
+  private evaluateFhirPath(value: any, parameters?: any[]): any {
+    if (!parameters || parameters.length === 0) {
+      return value;
+    }
+    
+    const expression = parameters[0];
+    
+    // Very basic FHIRPath implementation - would need proper parser in production
+    if (expression === 'true') return true;
+    if (expression === 'false') return false;
+    if (expression.startsWith("'") && expression.endsWith("'")) {
+      return expression.slice(1, -1);
+    }
+    
+    // Handle simple property access
+    if (expression.includes('.')) {
+      const parts = expression.split('.');
+      let current = value;
+      for (const part of parts) {
+        if (current && typeof current === 'object') {
+          current = current[part];
+        } else {
+          return undefined;
+        }
+      }
+      return current;
+    }
+    
+    return value;
+  }
+
+  /**
+   * Create a new resource or element
+   */
+  private createResource(parameters?: any[]): any {
+    if (!parameters || parameters.length === 0) {
+      return {};
+    }
+    
+    const resourceType = parameters[0];
+    return { resourceType };
+  }
+
+  /**
+   * Create a reference
+   */
+  private createReference(value: any, parameters?: any[]): any {
+    if (typeof value === 'string') {
+      return { reference: value };
+    }
+    
+    if (value && value.resourceType && value.id) {
+      return { reference: `${value.resourceType}/${value.id}` };
+    }
+    
+    return value;
+  }
+
+  /**
+   * Apply date operations
+   */
+  private applyDateOperation(value: any, parameters?: any[]): any {
+    if (!parameters || parameters.length < 2) {
+      return value;
+    }
+    
+    const operation = parameters[0];
+    const amount = parameters[1];
+    
+    try {
+      const date = new Date(value);
+      
+      switch (operation) {
+        case 'add':
+          return new Date(date.getTime() + amount * 24 * 60 * 60 * 1000).toISOString();
+        case 'subtract':
+          return new Date(date.getTime() - amount * 24 * 60 * 60 * 1000).toISOString();
+        case 'now':
+          return new Date().toISOString();
+        default:
+          return value;
+      }
+    } catch (error) {
+      return value;
+    }
+  }
+
+  /**
+   * Append strings
+   */
+  private appendStrings(value: any, parameters?: any[]): any {
+    if (!parameters || parameters.length === 0) {
+      return value;
+    }
+    
+    let result = String(value || '');
+    for (const param of parameters) {
+      result += String(param);
+    }
+    
+    return result;
+  }
+
+  /**
+   * Cast value to different type
+   */
+  private castValue(value: any, parameters?: any[]): any {
+    if (!parameters || parameters.length === 0) {
+      return value;
+    }
+    
+    const targetType = parameters[0];
+    
+    try {
+      switch (targetType) {
+        case 'string':
+          return String(value);
+        case 'integer':
+          return parseInt(value, 10);
+        case 'decimal':
+          return parseFloat(value);
+        case 'boolean':
+          return Boolean(value);
+        case 'date':
+          return new Date(value).toISOString().split('T')[0];
+        case 'dateTime':
+          return new Date(value).toISOString();
+        default:
+          return value;
+      }
+    } catch (error) {
+      return value;
+    }
+  }
+
+  /**
+   * Get terminology services for external access
+   */
+  getTerminologyServices(): {
+    conceptMapService?: ConceptMapService;
+    valueSetService?: ValueSetService;
+    codeSystemService?: CodeSystemService;
+  } {
+    return {
+      conceptMapService: this.conceptMapService,
+      valueSetService: this.valueSetService,
+      codeSystemService: this.codeSystemService
+    };
   }
 
   /**
