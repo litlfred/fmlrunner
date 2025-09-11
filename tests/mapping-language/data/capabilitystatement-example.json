@@ -1,0 +1,23 @@
+{
+  "resourceType": "CapabilityStatement",
+  "id": "example",
+  "status": "active",
+  "date": "2023-01-01",
+  "rest": [
+    {
+      "mode": "server",
+      "resource": [
+        {
+          "type": "Patient",
+          "interaction": [
+            { "code": "read" },
+            { "code": "search-type" },
+            { "code": "create" },
+            { "code": "update" },
+            { "code": "delete" }
+          ]
+        }
+      ]
+    }
+  ]
+}

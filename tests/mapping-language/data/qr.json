@@ -1,0 +1,15 @@
+{
+  "resourceType": "QuestionnaireResponse",
+  "id": "qr-1",
+  "status": "completed",
+  "item": [
+    {
+      "linkId": "gender",
+      "answer": [
+        {
+          "valueString": "female"
+        }
+      ]
+    }
+  ]
+}
