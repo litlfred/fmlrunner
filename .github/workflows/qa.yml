@@ -28,49 +28,105 @@ jobs:
       run: npm ci
       
     - name: Run linting
+      id: lint
       run: npm run lint
       
     - name: Build project
+      id: build
       run: npm run build
       
     - name: Run tests with coverage
       run: npm test -- --coverage --coverageReporters=text-lcov
       
     - name: FML Compilation Tests
+      id: fml-compilation
+      continue-on-error: true
       run: |
         echo "=== FML Compilation Test Results ==="
-        npm test -- --testNamePattern="FML.*compilation|compile.*FML" --verbose
+        npm test -- --testPathPattern="fml-compiler|fhir-mapping-language" --verbose
         
     - name: FML Execution Tests  
+      id: fml-execution
+      continue-on-error: true
       run: |
         echo "=== FML Execution Test Results ==="
-        npm test -- --testNamePattern="execution|execute|transform" --verbose
+        npm test -- --testPathPattern="structure-map-executor|fhirpath-integration" --verbose
         
     - name: FHIR API Tests
+      id: fhir-api
+      continue-on-error: true
       run: |
         echo "=== FHIR API Test Results ==="
-        npm test -- --testNamePattern="API|endpoint|CRUD|FHIR" --verbose
+        npm test -- --testPathPattern="api|enhanced-api" --verbose
         
-    - name: Terminology Tests
+    - name: Validation & Core Tests
+      id: validation-core
+      continue-on-error: true
       run: |
-        echo "=== Terminology Test Results ==="
-        npm test -- --testNamePattern="ConceptMap|ValueSet|CodeSystem|terminology" --verbose
+        echo "=== Validation & Core Test Results ==="
+        npm test -- --testPathPattern="validation-service|fml-runner|structure-map-retriever|enhanced-tokenizer" --verbose
         
-    - name: Generate QA Summary
+    - name: Generate QA Summary Table
+      if: always()
       run: |
-        echo "## QA Report Summary" >> $GITHUB_STEP_SUMMARY
-        echo "### Test Results" >> $GITHUB_STEP_SUMMARY
-        echo "- Node.js Version: ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
-        echo "- Build Status: ✅ Passed" >> $GITHUB_STEP_SUMMARY
-        echo "- Linting: ✅ Passed" >> $GITHUB_STEP_SUMMARY
-        echo "- All Tests: ✅ $(npm test 2>&1 | grep -o '[0-9]* passed' | head -1)" >> $GITHUB_STEP_SUMMARY
-        echo "### Key Functionality Verified" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ FML Compilation and Parsing" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ StructureMap Execution" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ FHIR CRUD Operations" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Terminology Services" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Bundle Processing" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ REST API Endpoints" >> $GITHUB_STEP_SUMMARY
+        echo "## QA Report Summary - Node.js ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Test Category | Status | Details |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+        
+        # Build Status
+        if [ "${{ job.status }}" == "success" ] || [ "${{ steps.build.outcome }}" == "success" ]; then
+          echo "| Build | ✅ Passed | TypeScript compilation successful |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| Build | ❌ Failed | TypeScript compilation failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Linting Status  
+        if [ "${{ steps.lint.outcome }}" == "success" ]; then
+          echo "| Linting | ✅ Passed | ESLint validation successful |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| Linting | ❌ Failed | ESLint validation failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # FML Compilation Tests
+        if [ "${{ steps.fml-compilation.outcome }}" == "success" ]; then
+          echo "| FML Compilation | ✅ Passed | FML parsing and compilation tests |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| FML Compilation | ❌ Failed | FML parsing and compilation tests |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # FML Execution Tests
+        if [ "${{ steps.fml-execution.outcome }}" == "success" ]; then
+          echo "| FML Execution | ✅ Passed | StructureMap execution and FHIRPath tests |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| FML Execution | ❌ Failed | StructureMap execution and FHIRPath tests |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # FHIR API Tests
+        if [ "${{ steps.fhir-api.outcome }}" == "success" ]; then
+          echo "| FHIR API | ✅ Passed | REST API endpoints and CRUD operations |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| FHIR API | ❌ Failed | REST API endpoints and CRUD operations |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Validation & Core Tests
+        if [ "${{ steps.validation-core.outcome }}" == "success" ]; then
+          echo "| Validation & Core | ✅ Passed | Input validation and core library functions |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| Validation & Core | ❌ Failed | Input validation and core library functions |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Overall Summary
+        TOTAL_TESTS=$(npm test 2>&1 | grep -o 'Tests:.*[0-9]* passed' | grep -o '[0-9]* passed' | head -1 || echo "unknown passed")
+        TOTAL_SUITES=$(npm test 2>&1 | grep -o 'Test Suites:.*[0-9]* passed' | grep -o '[0-9]* passed' | head -1 || echo "unknown passed")
+        
+        echo "### Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Node.js Version:** ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Total Tests:** $TOTAL_TESTS" >> $GITHUB_STEP_SUMMARY
+        echo "- **Test Suites:** $TOTAL_SUITES" >> $GITHUB_STEP_SUMMARY
+        echo "- **Overall Status:** $([ "${{ job.status }}" == "success" ] && echo "✅ All QA checks passed" || echo "❌ Some QA checks failed")" >> $GITHUB_STEP_SUMMARY
         
     - name: Upload test artifacts
       uses: actions/upload-artifact@v4
