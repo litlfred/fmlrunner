@@ -409,9 +409,9 @@ export class FmlRunnerMcp {
           type: 'text',
           text: JSON.stringify({
             success: result.success,
-            output: result.output,
+            output: result.result,
             errors: result.errors,
-            warnings: result.warnings
+            warnings: result.errors || []
           }, null, 2)
         }
       ]
@@ -604,7 +604,7 @@ export class FmlRunnerMcp {
 }
 
 // Export for use as a library
-export { FmlRunnerMcp };
+// Class is already exported above
 
 // CLI entry point
 if (require.main === module) {

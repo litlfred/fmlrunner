@@ -1,4 +1,4 @@
-import { StructureMap, ExecutionResult, ExecutionOptions, EnhancedExecutionResult } from '../types';
+import { StructureMap, ExecutionResult, ExecutionOptions, EnhancedExecutionResult } from './types';
 import { ValidationService } from './validation-service';
 import { ConceptMapService } from './conceptmap-service';
 import { ValueSetService } from './valueset-service';

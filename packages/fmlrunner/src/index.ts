@@ -165,8 +165,8 @@ export class FmlRunner {
       // Execute the transformation
       const result = this.executor.execute(structureMap, inputContent);
       
-      if (this.options.validateInputOutput && result.success && result.output) {
-        const validation = this.schemaValidator.validateExecutionOutput(result.output);
+      if (this.options.validateInputOutput && result.success && result.result) {
+        const validation = this.schemaValidator.validateExecutionOutput(result.result);
         if (!validation.valid) {
           this.logger.error('Execution output validation failed', { errors: validation.errors });
           return {
@@ -331,14 +331,14 @@ export class FmlRunner {
           return {
             success: false,
             errors: validation.errors,
-            processed: 0,
-            skipped: 0,
-            resources: {
+            warnings: [],
+            processed: {
               structureMaps: 0,
               structureDefinitions: 0,
               conceptMaps: 0,
               valueSets: 0,
-              codeSystems: 0
+              codeSystems: 0,
+              other: 0
             }
           };
         }
@@ -349,10 +349,9 @@ export class FmlRunner {
     
     this.logger.info('Bundle processing completed', {
       success: result.success,
-      processed: result.processed,
-      skipped: result.skipped
+      processed: result.processed
     });
-    
+
     return result;
   }
 

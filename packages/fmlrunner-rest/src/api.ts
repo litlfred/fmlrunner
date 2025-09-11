@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { FmlRunner } from '../index';
+import { FmlRunner } from 'fmlrunner';
 
 /**
  * FML Runner API Server implementing the OpenAPI specification

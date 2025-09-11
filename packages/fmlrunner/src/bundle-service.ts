@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, StructureMap, StructureDefinition, ConceptMap, ValueSet, CodeSystem } from '../types';
+import { Bundle, BundleEntry, StructureMap, StructureDefinition, ConceptMap, ValueSet, CodeSystem } from './types';
 import { ConceptMapService } from './conceptmap-service';
 import { ValueSetService } from './valueset-service';
 import { CodeSystemService } from './codesystem-service';

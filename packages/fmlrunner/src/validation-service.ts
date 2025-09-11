@@ -1,4 +1,4 @@
-import { StructureDefinition, ValidationResult, ValidationError, ValidationWarning } from '../types';
+import { StructureDefinition, ValidationResult, ValidationError, ValidationWarning } from './types';
 
 /**
  * Basic validation service for FHIR resources

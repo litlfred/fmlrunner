@@ -131,4 +131,5 @@ Thumbs.db
 
 # Temporary files
 tmp/
-temp/
+temp/node_modules/
+packages/fmlrunner-web-REMOVED/

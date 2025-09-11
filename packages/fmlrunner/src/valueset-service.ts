@@ -1,4 +1,4 @@
-import { ValueSet } from '../types';
+import { ValueSet } from './types';
 
 /**
  * Service for managing ValueSet resources

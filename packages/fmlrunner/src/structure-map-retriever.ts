@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { StructureMap } from '../types';
+import { StructureMap } from './types';
 
 /**
  * StructureMap retrieval service - loads StructureMaps from files or URLs

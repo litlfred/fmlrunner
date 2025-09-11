@@ -1,4 +1,4 @@
-import { ConceptMap } from '../types';
+import { ConceptMap } from './types';
 
 /**
  * Service for managing ConceptMap resources

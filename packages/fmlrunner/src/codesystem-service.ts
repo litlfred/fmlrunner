@@ -1,4 +1,4 @@
-import { CodeSystem } from '../types';
+import { CodeSystem } from './types';
 
 /**
  * Service for managing CodeSystem resources

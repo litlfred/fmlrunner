@@ -1,0 +1,46 @@
+{
+  "resourceType": "StructureMap",
+  "url": "http://ahdis.ch/matchbox/fml/qr2patgender",
+  "name": "qr2patgender",
+  "status": "draft",
+  "group": [
+    {
+      "name": "main",
+      "input": [
+        {
+          "name": "source",
+          "mode": "source"
+        },
+        {
+          "name": "target",
+          "mode": "target"
+        }
+      ],
+      "rule": [
+        {
+          "name": "rule1",
+          "source": [
+            {
+              "context": "source",
+              "element": "item",
+              "variable": "item",
+              "condition": "linkId = 'gender'"
+            }
+          ],
+          "target": [
+            {
+              "context": "target",
+              "element": "gender",
+              "transform": "copy",
+              "parameter": [
+                {
+                  "valueString": "item.answer.valueString"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

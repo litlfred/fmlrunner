@@ -1,4 +1,4 @@
-import { StructureMap, FmlCompilationResult, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
+import { StructureMap, FmlCompilationResult, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from './types';
 
 /**
  * FML Token types based on FHIR Mapping Language specification
