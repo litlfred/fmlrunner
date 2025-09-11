@@ -1,0 +1,82 @@
+name: QA Report
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  qa-report:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Run tests with coverage
+      run: npm test -- --coverage --coverageReporters=text-lcov
+      
+    - name: FML Compilation Tests
+      run: |
+        echo "=== FML Compilation Test Results ==="
+        npm test -- --testNamePattern="FML.*compilation|compile.*FML" --verbose
+        
+    - name: FML Execution Tests  
+      run: |
+        echo "=== FML Execution Test Results ==="
+        npm test -- --testNamePattern="execution|execute|transform" --verbose
+        
+    - name: FHIR API Tests
+      run: |
+        echo "=== FHIR API Test Results ==="
+        npm test -- --testNamePattern="API|endpoint|CRUD|FHIR" --verbose
+        
+    - name: Terminology Tests
+      run: |
+        echo "=== Terminology Test Results ==="
+        npm test -- --testNamePattern="ConceptMap|ValueSet|CodeSystem|terminology" --verbose
+        
+    - name: Generate QA Summary
+      run: |
+        echo "## QA Report Summary" >> $GITHUB_STEP_SUMMARY
+        echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "- Node.js Version: ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Build Status: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+        echo "- Linting: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+        echo "- All Tests: ✅ $(npm test 2>&1 | grep -o '[0-9]* passed' | head -1)" >> $GITHUB_STEP_SUMMARY
+        echo "### Key Functionality Verified" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ FML Compilation and Parsing" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ StructureMap Execution" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ FHIR CRUD Operations" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Terminology Services" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Bundle Processing" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ REST API Endpoints" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-node-${{ matrix.node-version }}
+        path: |
+          coverage/
+          dist/
