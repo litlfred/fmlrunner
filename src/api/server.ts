@@ -37,21 +37,21 @@ export class FmlRunnerApi {
     apiRouter.get('/structuremap/:reference', this.getStructureMap.bind(this));
 
     // FHIR-compliant StructureDefinition CRUD endpoints
-    apiRouter.get('/StructureDefinitions', this.searchStructureDefinitions.bind(this));
-    apiRouter.get('/StructureDefinitions/:id', this.getStructureDefinitionById.bind(this));
-    apiRouter.post('/StructureDefinitions', this.createStructureDefinition.bind(this));
-    apiRouter.put('/StructureDefinitions/:id', this.updateStructureDefinition.bind(this));
-    apiRouter.delete('/StructureDefinitions/:id', this.deleteStructureDefinition.bind(this));
+    apiRouter.get('/StructureDefinition', this.searchStructureDefinitions.bind(this));
+    apiRouter.get('/StructureDefinition/:id', this.getStructureDefinitionById.bind(this));
+    apiRouter.post('/StructureDefinition', this.createStructureDefinition.bind(this));
+    apiRouter.put('/StructureDefinition/:id', this.updateStructureDefinition.bind(this));
+    apiRouter.delete('/StructureDefinition/:id', this.deleteStructureDefinition.bind(this));
 
     // FHIR $transform operation (need to register before :id route)
-    apiRouter.post('/StructureMaps/:operation(\\$transform)', this.transformOperation.bind(this));
+    apiRouter.post('/StructureMap/:operation(\\$transform)', this.transformOperation.bind(this));
 
     // FHIR-compliant StructureMap CRUD endpoints
-    apiRouter.get('/StructureMaps', this.searchStructureMaps.bind(this));
-    apiRouter.get('/StructureMaps/:id', this.getStructureMapById.bind(this));
-    apiRouter.post('/StructureMaps', this.createStructureMap.bind(this));
-    apiRouter.put('/StructureMaps/:id', this.updateStructureMap.bind(this));
-    apiRouter.delete('/StructureMaps/:id', this.deleteStructureMap.bind(this));
+    apiRouter.get('/StructureMap', this.searchStructureMaps.bind(this));
+    apiRouter.get('/StructureMap/:id', this.getStructureMapById.bind(this));
+    apiRouter.post('/StructureMap', this.createStructureMap.bind(this));
+    apiRouter.put('/StructureMap/:id', this.updateStructureMap.bind(this));
+    apiRouter.delete('/StructureMap/:id', this.deleteStructureMap.bind(this));
 
     // Enhanced execution with validation
     apiRouter.post('/execute-with-validation', this.executeWithValidation.bind(this));

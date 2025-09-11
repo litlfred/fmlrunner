@@ -38,8 +38,9 @@ describe('FmlCompiler', () => {
     it('should handle compilation errors gracefully', () => {
       // Test with malformed content that should trigger an error
       const result = compiler.compile('invalid fml content');
-      expect(result.success).toBe(true); // Basic parser should still create a structure
+      expect(result.success).toBe(true); // Enhanced parser should handle this gracefully with fallback
       expect(result.structureMap).toBeDefined();
+      expect(result.structureMap?.name).toBe('DefaultMap'); // Should use fallback
     });
 
     it('should create default structure when no map declaration found', () => {
