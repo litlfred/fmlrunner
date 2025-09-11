@@ -29,9 +29,9 @@ export class FmlRunnerApi {
    * Setup API routes according to OpenAPI specification
    */
   private setupRoutes(): void {
-    const apiRouter = express.Router();
+    const apiRouter = express.Router({ caseSensitive: true });
 
-    // Legacy endpoints for backward compatibility
+    // Legacy endpoints for backward compatibility 
     apiRouter.post('/compile', this.compileFml.bind(this));
     apiRouter.post('/execute', this.executeStructureMap.bind(this));
     apiRouter.get('/structuremap/:reference', this.getStructureMap.bind(this));
@@ -46,7 +46,7 @@ export class FmlRunnerApi {
     apiRouter.post('/ConceptMap', this.createConceptMap.bind(this));
     apiRouter.put('/ConceptMap/:id', this.updateConceptMap.bind(this));
     apiRouter.delete('/ConceptMap/:id', this.deleteConceptMap.bind(this));
-    apiRouter.post('/ConceptMap/:operation(\\$translate)', this.translateOperation.bind(this));
+    apiRouter.post('/ConceptMap/\\$translate', this.translateOperation.bind(this));
 
     // FHIR-compliant ValueSet CRUD endpoints
     apiRouter.get('/ValueSet', this.searchValueSets.bind(this));
@@ -54,8 +54,8 @@ export class FmlRunnerApi {
     apiRouter.post('/ValueSet', this.createValueSet.bind(this));
     apiRouter.put('/ValueSet/:id', this.updateValueSet.bind(this));
     apiRouter.delete('/ValueSet/:id', this.deleteValueSet.bind(this));
-    apiRouter.post('/ValueSet/:operation(\\$expand)', this.expandValueSetOperation.bind(this));
-    apiRouter.post('/ValueSet/:operation(\\$validate-code)', this.validateCodeOperation.bind(this));
+    apiRouter.post('/ValueSet/:id/\\$expand', this.expandValueSetOperation.bind(this));
+    apiRouter.post('/ValueSet/:id/\\$validate-code', this.validateCodeOperation.bind(this));
 
     // FHIR-compliant CodeSystem CRUD endpoints
     apiRouter.get('/CodeSystem', this.searchCodeSystems.bind(this));
@@ -63,9 +63,9 @@ export class FmlRunnerApi {
     apiRouter.post('/CodeSystem', this.createCodeSystem.bind(this));
     apiRouter.put('/CodeSystem/:id', this.updateCodeSystem.bind(this));
     apiRouter.delete('/CodeSystem/:id', this.deleteCodeSystem.bind(this));
-    apiRouter.post('/CodeSystem/:operation(\\$lookup)', this.lookupOperation.bind(this));
-    apiRouter.post('/CodeSystem/:operation(\\$subsumes)', this.subsumesOperation.bind(this));
-    apiRouter.post('/CodeSystem/:operation(\\$validate-code)', this.validateCodeInCodeSystemOperation.bind(this));
+    apiRouter.post('/CodeSystem/:id/\\$lookup', this.lookupOperation.bind(this));
+    apiRouter.post('/CodeSystem/:id/\\$subsumes', this.subsumesOperation.bind(this));
+    apiRouter.post('/CodeSystem/:id/\\$validate-code', this.validateCodeInCodeSystemOperation.bind(this));
 
     // FHIR-compliant StructureDefinition CRUD endpoints
     apiRouter.get('/StructureDefinition', this.searchStructureDefinitions.bind(this));
@@ -226,8 +226,15 @@ export class FmlRunnerApi {
     try {
       const { id } = req.params;
       
-      // Use existing retrieval logic with ID as reference
-      const structureMap = await this.fmlRunner.getStructureMap(id);
+      // First check registered StructureMaps in memory
+      const registeredMaps = this.fmlRunner.getAllStructureMaps();
+      let structureMap: any = registeredMaps.find(sm => sm.id === id || sm.url === id);
+      
+      // If not found in memory, try file system
+      if (!structureMap) {
+        const retrieved = await this.fmlRunner.getStructureMap(id);
+        structureMap = retrieved || null;
+      }
       
       if (structureMap) {
         res.json(structureMap);

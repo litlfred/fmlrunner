@@ -108,10 +108,10 @@ describe('FmlRunnerApi', () => {
   });
 
   describe('FHIR-compliant StructureMap endpoints', () => {
-    describe('GET /api/v1/StructureMaps', () => {
+    describe('GET /api/v1/StructureMap', () => {
       it('should return empty bundle for search', async () => {
         const response = await request(app)
-          .get('/api/v1/StructureMaps')
+          .get('/api/v1/StructureMap')
           .expect(200);
 
         expect(response.body.resourceType).toBe('Bundle');
@@ -121,17 +121,17 @@ describe('FmlRunnerApi', () => {
 
       it('should accept FHIR search parameters', async () => {
         const response = await request(app)
-          .get('/api/v1/StructureMaps?name=test&status=active&_count=10')
+          .get('/api/v1/StructureMap?name=test&status=active&_count=10')
           .expect(200);
 
         expect(response.body.resourceType).toBe('Bundle');
       });
     });
 
-    describe('GET /api/v1/StructureMaps/:id', () => {
+    describe('GET /api/v1/StructureMap/:id', () => {
       it('should retrieve StructureMap by ID', async () => {
         const response = await request(app)
-          .get('/api/v1/StructureMaps/test-structure-map.json')
+          .get('/api/v1/StructureMap/test-structure-map.json')
           .expect(200);
 
         expect(response.body.resourceType).toBe('StructureMap');
@@ -140,7 +140,7 @@ describe('FmlRunnerApi', () => {
 
       it('should return FHIR OperationOutcome for not found', async () => {
         const response = await request(app)
-          .get('/api/v1/StructureMaps/non-existent')
+          .get('/api/v1/StructureMap/non-existent')
           .expect(404);
 
         expect(response.body.resourceType).toBe('OperationOutcome');
@@ -149,7 +149,7 @@ describe('FmlRunnerApi', () => {
       });
     });
 
-    describe('POST /api/v1/StructureMaps', () => {
+    describe('POST /api/v1/StructureMap', () => {
       it('should create new StructureMap', async () => {
         const structureMap = {
           resourceType: 'StructureMap',
@@ -163,7 +163,7 @@ describe('FmlRunnerApi', () => {
         };
 
         const response = await request(app)
-          .post('/api/v1/StructureMaps')
+          .post('/api/v1/StructureMap')
           .send(structureMap)
           .expect(201);
 
@@ -174,7 +174,7 @@ describe('FmlRunnerApi', () => {
 
       it('should return FHIR OperationOutcome for invalid resource', async () => {
         const response = await request(app)
-          .post('/api/v1/StructureMaps')
+          .post('/api/v1/StructureMap')
           .send({ resourceType: 'Patient' })
           .expect(400);
 
@@ -183,7 +183,7 @@ describe('FmlRunnerApi', () => {
       });
     });
 
-    describe('PUT /api/v1/StructureMaps/:id', () => {
+    describe('PUT /api/v1/StructureMap/:id', () => {
       it('should update existing StructureMap', async () => {
         const structureMap = {
           resourceType: 'StructureMap',
@@ -197,7 +197,7 @@ describe('FmlRunnerApi', () => {
         };
 
         const response = await request(app)
-          .put('/api/v1/StructureMaps/test-id')
+          .put('/api/v1/StructureMap/test-id')
           .send(structureMap)
           .expect(200);
 
@@ -206,16 +206,16 @@ describe('FmlRunnerApi', () => {
       });
     });
 
-    describe('DELETE /api/v1/StructureMaps/:id', () => {
+    describe('DELETE /api/v1/StructureMap/:id', () => {
       it('should delete StructureMap', async () => {
         await request(app)
-          .delete('/api/v1/StructureMaps/test-id')
+          .delete('/api/v1/StructureMap/test-id')
           .expect(204);
       });
     });
   });
 
-  describe('POST /api/v1/StructureMaps/\\$transform', () => {
+  describe('POST /api/v1/StructureMap/\\$transform', () => {
     it('should transform using FHIR Parameters', async () => {
       const parameters = {
         resourceType: 'Parameters',
@@ -232,7 +232,7 @@ describe('FmlRunnerApi', () => {
       };
 
       const response = await request(app)
-        .post('/api/v1/StructureMaps/$transform')
+        .post('/api/v1/StructureMap/$transform')
         .send(parameters)
         .expect(200);
 
@@ -243,7 +243,7 @@ describe('FmlRunnerApi', () => {
 
     it('should return OperationOutcome for invalid Parameters', async () => {
       const response = await request(app)
-        .post('/api/v1/StructureMaps/$transform')
+        .post('/api/v1/StructureMap/$transform')
         .send({ resourceType: 'Bundle' })
         .expect(400);
 
@@ -263,7 +263,7 @@ describe('FmlRunnerApi', () => {
       };
 
       const response = await request(app)
-        .post('/api/v1/StructureMaps/$transform')
+        .post('/api/v1/StructureMap/$transform')
         .send(parameters)
         .expect(400);
 
@@ -287,7 +287,7 @@ describe('FmlRunnerApi', () => {
       };
 
       const response = await request(app)
-        .post('/api/v1/StructureMaps/$transform')
+        .post('/api/v1/StructureMap/$transform')
         .send(parameters)
         .expect(400);
 
@@ -297,10 +297,10 @@ describe('FmlRunnerApi', () => {
   });
 
   describe('StructureDefinition endpoints', () => {
-    describe('GET /api/v1/StructureDefinitions', () => {
+    describe('GET /api/v1/StructureDefinition', () => {
       it('should return empty bundle initially', async () => {
         const response = await request(app)
-          .get('/api/v1/StructureDefinitions')
+          .get('/api/v1/StructureDefinition')
           .expect(200);
 
         expect(response.body.resourceType).toBe('Bundle');
@@ -309,7 +309,7 @@ describe('FmlRunnerApi', () => {
       });
     });
 
-    describe('POST /api/v1/StructureDefinitions', () => {
+    describe('POST /api/v1/StructureDefinition', () => {
       it('should create new StructureDefinition', async () => {
         const structureDefinition = {
           resourceType: 'StructureDefinition',
@@ -329,7 +329,7 @@ describe('FmlRunnerApi', () => {
         };
 
         const response = await request(app)
-          .post('/api/v1/StructureDefinitions')
+          .post('/api/v1/StructureDefinition')
           .send(structureDefinition)
           .expect(201);
 
@@ -339,10 +339,10 @@ describe('FmlRunnerApi', () => {
       });
     });
 
-    describe('GET /api/v1/StructureDefinitions/:id', () => {
+    describe('GET /api/v1/StructureDefinition/:id', () => {
       it('should return 404 for non-existent StructureDefinition', async () => {
         const response = await request(app)
-          .get('/api/v1/StructureDefinitions/non-existent')
+          .get('/api/v1/StructureDefinition/non-existent')
           .expect(404);
 
         expect(response.body.resourceType).toBe('OperationOutcome');
@@ -378,7 +378,7 @@ describe('FmlRunnerApi', () => {
       };
 
       await request(app)
-        .post('/api/v1/StructureDefinitions')
+        .post('/api/v1/StructureDefinition')
         .send(structureDefinition);
     });
 
