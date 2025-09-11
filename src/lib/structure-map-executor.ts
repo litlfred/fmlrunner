@@ -3,6 +3,7 @@ import { ValidationService } from './validation-service';
 import { ConceptMapService } from './conceptmap-service';
 import { ValueSetService } from './valueset-service';
 import { CodeSystemService } from './codesystem-service';
+import * as fhirpath from 'fhirpath';
 
 /**
  * StructureMap execution engine - executes StructureMaps on input data
@@ -240,7 +241,7 @@ export class StructureMapExecutor {
   }
 
   /**
-   * Basic FHIRPath evaluation
+   * FHIRPath evaluation using official HL7 FHIRPath library
    */
   private evaluateFhirPath(value: any, parameters?: any[]): any {
     if (!parameters || parameters.length === 0) {
@@ -249,28 +250,21 @@ export class StructureMapExecutor {
     
     const expression = parameters[0];
     
-    // Very basic FHIRPath implementation - would need proper parser in production
-    if (expression === 'true') return true;
-    if (expression === 'false') return false;
-    if (expression.startsWith("'") && expression.endsWith("'")) {
-      return expression.slice(1, -1);
-    }
-    
-    // Handle simple property access
-    if (expression.includes('.')) {
-      const parts = expression.split('.');
-      let current = value;
-      for (const part of parts) {
-        if (current && typeof current === 'object') {
-          current = current[part];
-        } else {
-          return undefined;
-        }
+    try {
+      // Use the official HL7 FHIRPath library for proper evaluation
+      const result = fhirpath.evaluate(value, expression);
+      
+      // FHIRPath returns an array of results, return first result or empty array
+      if (Array.isArray(result)) {
+        return result.length === 1 ? result[0] : result;
       }
-      return current;
+      
+      return result;
+    } catch (error) {
+      console.error(`FHIRPath evaluation failed for expression "${expression}":`, error);
+      // Return undefined for failed evaluations rather than partial results
+      return undefined;
     }
-    
-    return value;
   }
 
   /**
