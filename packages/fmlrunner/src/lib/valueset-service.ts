@@ -1,10 +1,16 @@
 import { ValueSet } from '../types';
+import { Logger } from './logger';
 
 /**
  * Service for managing ValueSet resources
  */
 export class ValueSetService {
   private valueSets: Map<string, ValueSet> = new Map();
+  private logger: Logger;
+
+  constructor(logger: Logger) {
+    this.logger = logger;
+  }
 
   /**
    * Register a ValueSet resource

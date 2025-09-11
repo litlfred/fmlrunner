@@ -3,6 +3,7 @@ import { ValidationService } from './validation-service';
 import { ConceptMapService } from './conceptmap-service';
 import { ValueSetService } from './valueset-service';
 import { CodeSystemService } from './codesystem-service';
+import { Logger } from './logger';
 import * as fhirpath from 'fhirpath';
 
 /**
@@ -13,9 +14,11 @@ export class StructureMapExecutor {
   private conceptMapService?: ConceptMapService;
   private valueSetService?: ValueSetService;
   private codeSystemService?: CodeSystemService;
+  private logger: Logger;
 
-  constructor() {
-    this.validationService = new ValidationService();
+  constructor(logger: Logger) {
+    this.logger = logger;
+    this.validationService = new ValidationService(logger);
   }
 
   /**

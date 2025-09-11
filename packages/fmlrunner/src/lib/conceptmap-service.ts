@@ -1,10 +1,16 @@
 import { ConceptMap } from '../types';
+import { Logger } from './logger';
 
 /**
  * Service for managing ConceptMap resources
  */
 export class ConceptMapService {
   private conceptMaps: Map<string, ConceptMap> = new Map();
+  private logger: Logger;
+
+  constructor(logger: Logger) {
+    this.logger = logger;
+  }
 
   /**
    * Register a ConceptMap resource

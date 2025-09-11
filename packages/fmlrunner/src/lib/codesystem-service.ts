@@ -1,10 +1,16 @@
 import { CodeSystem } from '../types';
+import { Logger } from './logger';
 
 /**
  * Service for managing CodeSystem resources
  */
 export class CodeSystemService {
   private codeSystems: Map<string, CodeSystem> = new Map();
+  private logger: Logger;
+
+  constructor(logger: Logger) {
+    this.logger = logger;
+  }
 
   /**
    * Register a CodeSystem resource

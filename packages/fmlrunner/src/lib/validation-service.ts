@@ -1,10 +1,16 @@
 import { StructureDefinition, ValidationResult, ValidationError, ValidationWarning } from '../types';
+import { Logger } from './logger';
 
 /**
  * Basic validation service for FHIR resources
  */
 export class ValidationService {
   private structureDefinitions: Map<string, StructureDefinition> = new Map();
+  private logger: Logger;
+
+  constructor(logger: Logger) {
+    this.logger = logger;
+  }
 
   /**
    * Register a StructureDefinition for validation

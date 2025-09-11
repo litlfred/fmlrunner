@@ -3,6 +3,7 @@ import { ConceptMapService } from './conceptmap-service';
 import { ValueSetService } from './valueset-service';
 import { CodeSystemService } from './codesystem-service';
 import { ValidationService } from './validation-service';
+import { Logger } from './logger';
 
 /**
  * Result of processing a bundle
@@ -25,13 +26,18 @@ export interface BundleProcessingResult {
  * Service for processing FHIR Bundles and distributing resources to appropriate services
  */
 export class BundleService {
+  private logger: Logger;
+  
   constructor(
     private conceptMapService: ConceptMapService,
     private valueSetService: ValueSetService,
     private codeSystemService: CodeSystemService,
-    private validationService?: ValidationService,
-    private structureMapStore?: Map<string, StructureMap>
-  ) {}
+    private validationService: ValidationService | undefined,
+    private structureMapStore: Map<string, StructureMap>,
+    logger: Logger
+  ) {
+    this.logger = logger;
+  }
 
   /**
    * Process a FHIR Bundle and register all contained resources
