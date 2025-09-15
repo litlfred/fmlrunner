@@ -90,6 +90,9 @@ export class FmlRunnerApi {
     // Validation endpoint
     apiRouter.post('/validate', this.validateResource.bind(this));
 
+    // FML syntax validation endpoint
+    apiRouter.post('/validate-fml-syntax', this.validateFmlSyntax.bind(this));
+
     // Health check endpoint
     apiRouter.get('/health', this.healthCheck.bind(this));
 
@@ -738,6 +741,81 @@ export class FmlRunnerApi {
           severity: 'error',
           code: 'exception',
           diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Validate FML syntax
+   */
+  private async validateFmlSyntax(req: Request, res: Response): Promise<void> {
+    try {
+      const { fmlContent } = req.body;
+
+      if (!fmlContent) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'fmlContent is required in request body'
+          }]
+        });
+        return;
+      }
+
+      const validationResult = this.fmlRunner.validateFmlSyntax(fmlContent);
+
+      if (!validationResult.success) {
+        res.status(500).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'exception',
+            diagnostics: validationResult.errors?.join(', ') || 'Validation service failed'
+          }]
+        });
+        return;
+      }
+
+      if (validationResult.valid) {
+        res.json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'information',
+            code: 'informational',
+            diagnostics: 'FML syntax is valid'
+          }]
+        });
+      } else {
+        const issues = (validationResult.errors || []).map(error => ({
+          severity: 'error' as const,
+          code: 'invariant' as const,
+          diagnostics: error,
+          location: validationResult.errorLocation ? [validationResult.errorLocation] : undefined,
+          expression: validationResult.lineNumber ? [`line ${validationResult.lineNumber}`] : undefined
+        }));
+
+        // Add warnings if any
+        const warningIssues = (validationResult.warnings || []).map(warning => ({
+          severity: 'warning' as const,
+          code: 'invariant' as const,
+          diagnostics: warning
+        }));
+
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [...issues, ...warningIssues]
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error during FML syntax validation'
         }]
       });
     }

@@ -312,6 +312,20 @@ export class FmlRunnerMcp {
               },
               required: ['valueSetRef', 'code']
             }
+          },
+          {
+            name: 'validate-fml-syntax',
+            description: 'Validate FML (FHIR Mapping Language) syntax without compiling to StructureMap',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                fmlContent: {
+                  type: 'string',
+                  description: 'FML content to validate for syntax errors'
+                }
+              },
+              required: ['fmlContent']
+            }
           }
         ]
       };
@@ -348,6 +362,9 @@ export class FmlRunnerMcp {
           
           case 'validate-code':
             return await this.handleValidateCode(args);
+          
+          case 'validate-fml-syntax':
+            return await this.handleValidateFmlSyntax(args);
           
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -583,6 +600,54 @@ export class FmlRunnerMcp {
         }
       ]
     };
+  }
+
+  private async handleValidateFmlSyntax(args: any): Promise<CallToolResult> {
+    const { fmlContent } = args;
+    
+    const result = this.fmlRunner.validateFmlSyntax(fmlContent);
+
+    if (!result.success) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Validation service error: ${result.errors?.join(', ') || 'Unknown error'}`
+          }
+        ],
+        isError: true
+      };
+    }
+
+    if (result.valid) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              valid: true,
+              message: 'FML syntax is valid'
+            }, null, 2)
+          }
+        ]
+      };
+    } else {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              valid: false,
+              errors: result.errors || [],
+              warnings: result.warnings || [],
+              lineNumber: result.lineNumber,
+              columnNumber: result.columnNumber,
+              errorLocation: result.errorLocation
+            }, null, 2)
+          }
+        ]
+      };
+    }
   }
 
   /**

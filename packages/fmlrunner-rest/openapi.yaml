@@ -256,6 +256,82 @@ paths:
               schema:
                 $ref: '#/components/schemas/OperationOutcome'
 
+  /validate-fml-syntax:
+    post:
+      summary: Validate FML syntax
+      description: |
+        Validate the syntax of FHIR Mapping Language (FML) content without compiling to StructureMap.
+        Returns detailed error information including line numbers and error locations for invalid syntax.
+      tags:
+        - Validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fmlContent:
+                  type: string
+                  description: FML content to validate for syntax errors
+                  example: |
+                    map "http://example.org/TestMapping" = "TestMapping"
+                    
+                    uses "http://hl7.org/fhir/StructureDefinition/QuestionnaireResponse" alias QR as source
+                    uses "http://hl7.org/fhir/StructureDefinition/Patient" alias Patient as target
+                    
+                    group QuestionnaireResponse(source src : QR, target tgt : Patient) {
+                      src.item as item -> tgt.gender = 'unknown';
+                    }
+              required:
+                - fmlContent
+      responses:
+        '200':
+          description: FML syntax is valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+              example:
+                resourceType: OperationOutcome
+                issue:
+                  - severity: information
+                    code: informational
+                    diagnostics: FML syntax is valid
+        '400':
+          description: FML syntax is invalid or request is malformed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+              examples:
+                syntax_error:
+                  summary: Syntax validation error
+                  value:
+                    resourceType: OperationOutcome
+                    issue:
+                      - severity: error
+                        code: invariant
+                        diagnostics: "FML content must start with a map declaration (e.g., \"map \\\"url\\\" = \\\"name\\\")"
+                        location:
+                          - "Beginning of file"
+                        expression:
+                          - "line 1"
+                missing_content:
+                  summary: Missing content error
+                  value:
+                    resourceType: OperationOutcome
+                    issue:
+                      - severity: error
+                        code: invalid
+                        diagnostics: fmlContent is required in request body
+        '500':
+          description: Internal server error during validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationOutcome'
+
 components:
   schemas:
     StructureMap:
@@ -518,3 +594,5 @@ tags:
     description: FHIR StructureMap operations
   - name: Bundle
     description: FHIR Bundle processing
+  - name: Validation
+    description: FML syntax and content validation
