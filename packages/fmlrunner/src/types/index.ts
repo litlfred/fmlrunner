@@ -64,6 +64,19 @@ export interface FmlCompilationResult {
 }
 
 /**
+ * FML syntax validation result
+ */
+export interface FmlSyntaxValidationResult {
+  success: boolean;
+  valid: boolean;
+  errors?: string[];
+  warnings?: string[];
+  lineNumber?: number;
+  columnNumber?: number;
+  errorLocation?: string;
+}
+
+/**
  * StructureMap execution result
  */
 export interface ExecutionResult {

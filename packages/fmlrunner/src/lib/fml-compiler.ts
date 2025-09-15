@@ -1,4 +1,4 @@
-import { StructureMap, FmlCompilationResult, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
+import { StructureMap, FmlCompilationResult, FmlSyntaxValidationResult, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
 import { Logger } from './logger';
 
 /**
@@ -723,6 +723,110 @@ export class FmlCompiler {
       return {
         success: false,
         errors: [error instanceof Error ? error.message : 'Unknown compilation error']
+      };
+    }
+  }
+
+  /**
+   * Validate FML syntax without generating StructureMap
+   * @param fmlContent The FML content to validate
+   * @returns Syntax validation result with detailed error information
+   */
+  validateSyntax(fmlContent: string): FmlSyntaxValidationResult {
+    try {
+      // Basic validation
+      if (!fmlContent || fmlContent.trim().length === 0) {
+        return {
+          success: true,
+          valid: false,
+          errors: ['FML content cannot be empty'],
+          lineNumber: 1,
+          columnNumber: 1
+        };
+      }
+
+      // Check for basic FML structure - must start with 'map'
+      const trimmedContent = fmlContent.trim();
+      if (!trimmedContent.toLowerCase().startsWith('map ')) {
+        return {
+          success: true,
+          valid: false,
+          errors: ['FML content must start with a map declaration (e.g., "map \\"url\\" = \\"name\\")'],
+          lineNumber: 1,
+          columnNumber: 1,
+          errorLocation: 'Beginning of file'
+        };
+      }
+
+      // Tokenize the FML content
+      const tokenizer = new FmlTokenizer(fmlContent);
+      let tokens;
+      try {
+        tokens = tokenizer.tokenize();
+      } catch (tokenError) {
+        const error = tokenError instanceof Error ? tokenError : new Error('Tokenization failed');
+        return {
+          success: true,
+          valid: false,
+          errors: [`Tokenization error: ${error.message}`],
+          lineNumber: 1,
+          columnNumber: 1,
+          errorLocation: 'During tokenization'
+        };
+      }
+
+      // Parse tokens for syntax validation
+      const parser = new FmlParser(tokens);
+      try {
+        // Attempt to parse - this will throw if syntax is invalid
+        parser.parse();
+        
+        return {
+          success: true,
+          valid: true,
+          errors: [],
+          warnings: []
+        };
+      } catch (parseError) {
+        const error = parseError instanceof Error ? parseError : new Error('Parse error');
+        let lineNumber = 1;
+        let columnNumber = 1;
+        let errorLocation = 'Unknown location';
+
+        // Extract line/column information from error message if available
+        const errorMessage = error.message;
+        const lineMatch = errorMessage.match(/line (\d+)/);
+        const columnMatch = errorMessage.match(/column (\d+)/);
+        
+        if (lineMatch) {
+          lineNumber = parseInt(lineMatch[1], 10);
+        }
+        if (columnMatch) {
+          columnNumber = parseInt(columnMatch[1], 10);
+        }
+
+        // Try to extract the location context from the error
+        if (errorMessage.includes('Expected') || errorMessage.includes('Got')) {
+          errorLocation = `Line ${lineNumber}, Column ${columnNumber}`;
+        }
+
+        return {
+          success: true,
+          valid: false,
+          errors: [errorMessage],
+          lineNumber,
+          columnNumber,
+          errorLocation
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
+      this.logger.error('FML syntax validation failed', { error: errorMessage });
+      
+      return {
+        success: false,
+        valid: false,
+        errors: [`Validation failed: ${errorMessage}`]
       };
     }
   }
