@@ -1,0 +1,11 @@
+map "http://ahdis.ch/matchbox/fml/narrative" = "narrative"
+
+uses "http://hl7.org/fhir/StructureDefinition/Patient" alias Patient as source
+uses "http://hl7.org/fhir/StructureDefinition/Patient" alias Patient as target
+
+group pat2pat(source src : Patient, target tgt : Patient) {
+  src -> tgt.text = create('Narrative') as narrative then {
+    src -> narrative.status = 'generated' "status";
+    src -> narrative.div = '<div xmlns="http://www.w3.org/1999/xhtml">text</div>' "div";
+  } "narrative";
+}

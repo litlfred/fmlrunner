@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "fml-input.schema.json",
+  "title": "FML Input Schema",
+  "description": "Schema for validating FHIR Mapping Language (FML) input content",
+  "type": "string",
+  "minLength": 1,
+  "pattern": "^map\\s+",
+  "examples": [
+    "map \"http://example.org/fml/example\" = \"ExampleMap\"\n\nuses \"http://hl7.org/fhir/StructureDefinition/Patient\" alias Patient as source"
+  ]
+}

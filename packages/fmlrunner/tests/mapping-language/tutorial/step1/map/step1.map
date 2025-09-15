@@ -1,0 +1,8 @@
+map "http://hl7.org/fhir/StructureMap/tutorial-step1" = "tutorial-step1"
+
+uses "http://hl7.org/fhir/StructureDefinition/tutorial-left-1" alias TLeft as source
+uses "http://hl7.org/fhir/StructureDefinition/tutorial-right-1" alias TRight as target
+
+group tutorial(source src : TLeft, target tgt : TRight) {
+  src.a -> tgt.a;
+}

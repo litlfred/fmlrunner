@@ -1,0 +1,33 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "tutorial-left-1",
+  "url": "http://hl7.org/fhir/StructureDefinition/tutorial-left-1",
+  "version": "5.0.0",
+  "name": "TutorialLeft1",
+  "status": "active",
+  "kind": "logical",
+  "abstract": false,
+  "type": "TLeft",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Base",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "TLeft",
+        "path": "TLeft",
+        "definition": "Tutorial Left Structure Step 1"
+      },
+      {
+        "id": "TLeft.a",
+        "path": "TLeft.a",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      }
+    ]
+  }
+}

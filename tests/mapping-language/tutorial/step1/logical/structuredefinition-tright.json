@@ -1,0 +1,33 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "tutorial-right-1",
+  "url": "http://hl7.org/fhir/StructureDefinition/tutorial-right-1",
+  "version": "5.0.0",
+  "name": "TutorialRight1",
+  "status": "active",
+  "kind": "logical",
+  "abstract": false,
+  "type": "TRight",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Base",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "TRight",
+        "path": "TRight",
+        "definition": "Tutorial Right Structure Step 1"
+      },
+      {
+        "id": "TRight.a",
+        "path": "TRight.a",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "resourceType": "QuestionnaireResponse",
+  "id": "qr-ext-1",
+  "status": "completed",
+  "item": [
+    {
+      "linkId": "weight",
+      "answer": [
+        {
+          "valueQuantity": {
+            "value": 90,
+            "unit": "kg",
+            "system": "http://unit.org",
+            "code": "kg"
+          }
+        }
+      ]
+    },
+    {
+      "linkId": "gender",
+      "answer": [
+        {
+          "valueString": "male"
+        }
+      ]
+    }
+  ]
+}
