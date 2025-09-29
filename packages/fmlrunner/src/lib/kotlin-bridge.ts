@@ -1,12 +1,15 @@
+// For now, import from the local shim until Kotlin/JS build is working
 import { 
   FmlRunner as KotlinFmlRunner, 
   FmlCompiler as KotlinFmlCompiler,
-  StructureMapExecutor as KotlinStructureMapExecutor,
+  StructureMapExecutor as KotlinStructureMapExecutor
+} from '../../fmlrunner-kotlin-core/dist/fmlrunner-core';
+import { 
   FmlCompilationResult,
   ExecutionResult,
   ExecutionOptions,
   StructureMap
-} from '@litlfred/fmlrunner-core';
+} from '../types';
 import { Logger } from './logger';
 
 /**

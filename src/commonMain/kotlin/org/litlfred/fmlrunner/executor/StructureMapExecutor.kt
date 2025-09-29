@@ -1,12 +1,16 @@
 package org.litlfred.fmlrunner.executor
 
 import org.litlfred.fmlrunner.types.*
+import org.litlfred.fmlrunner.fhirpath.BasicFhirPathEngine
+import org.litlfred.fmlrunner.fhirpath.FhirPathEngine
 import kotlinx.serialization.json.*
 
 /**
  * StructureMap execution engine - executes StructureMaps on input data
+ * Now uses Kotlin FHIRPath engine instead of Node.js fhirpath library
  */
 class StructureMapExecutor {
+    private val fhirPathEngine: FhirPathEngine = createFhirPathEngine()
     
     /**
      * Execute a StructureMap on input content
@@ -209,37 +213,10 @@ class StructureMapExecutor {
     }
 
     /**
-     * Simple expression evaluation (basic FHIRPath-like)
+     * Simple expression evaluation using Kotlin FHIRPath engine
      */
     private fun evaluateExpression(context: JsonElement, expression: String): JsonElement {
-        // Very basic implementation - in real use case, would use proper FHIRPath engine
-        return when {
-            expression.startsWith("'") && expression.endsWith("'") -> {
-                // String literal
-                JsonPrimitive(expression.substring(1, expression.length - 1))
-            }
-            expression.matches(Regex("\\d+")) -> {
-                // Number literal
-                JsonPrimitive(expression.toInt())
-            }
-            expression == "true" || expression == "false" -> {
-                // Boolean literal
-                JsonPrimitive(expression.toBoolean())
-            }
-            expression.contains(".") -> {
-                // Property access
-                val parts = expression.split(".")
-                var current = context
-                for (part in parts) {
-                    current = extractElementValue(current, part) ?: return JsonNull
-                }
-                current
-            }
-            else -> {
-                // Simple property access
-                extractElementValue(context, expression) ?: JsonNull
-            }
-        }
+        return fhirPathEngine.evaluateFirst(context, expression) ?: JsonNull
     }
 
     /**

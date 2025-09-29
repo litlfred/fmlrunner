@@ -133,3 +133,11 @@ Thumbs.db
 tmp/
 temp/node_modules/
 packages/fmlrunner-web-REMOVED/
+
+# Gradle
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# Kotlin/JS build outputs
+build/
+*.kotlin_module

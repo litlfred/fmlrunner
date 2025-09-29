@@ -8,8 +8,8 @@
     "dist/"
   ],
   "scripts": {
-    "build-kotlin": "gradle jsMainClasses",
-    "prepare": "npm run build-kotlin || echo 'Kotlin build skipped'"
+    "build": "echo 'Kotlin/JS build placeholder'",
+    "test": "echo 'Kotlin/JS test placeholder'"
   },
   "keywords": [
     "fhir",

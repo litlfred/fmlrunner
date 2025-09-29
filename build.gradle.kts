@@ -10,7 +10,20 @@ repositories {
     mavenCentral()
 }
 
+// Configure JVM toolchain at the project level
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
+
 kotlin {
+    jvm {
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
+    }
+    
     js(IR) {
         browser {
             testTask {
@@ -41,13 +54,6 @@ kotlin {
         useCommonJs() // Use CommonJS for better Node.js compatibility
     }
     
-    jvm {
-        jvmToolchain(11)
-        testRuns["test"].executionTask.configure {
-            useJUnitPlatform()
-        }
-    }
-    
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -65,6 +71,9 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                // TODO: Add HAPI FHIR libraries when stable
+                // implementation("ca.uhn.hapi.fhir:hapi-fhir-client:7.0.2")
+                // implementation("ca.uhn.hapi.fhir:hapi-fhir-caching-caffeine:7.0.2")
             }
         }
         
