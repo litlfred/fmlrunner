@@ -220,44 +220,16 @@ class StructureMapExecutor {
      */
     private fun evaluateExpression(context: JsonElement, expression: String): JsonElement {
         return try {
-            // Prepared for kotlin-fhirpath engine when network access allows
-            // val contextString = context.toString()
-            // val results = fhirPathEngine.evaluate(contextString, expression)
-            // if (results.isNotEmpty()) {
-            //     Json.parseToJsonElement(results.first().toString())
-            // } else {
-            //     JsonNull
-            // }
-            
-            // Enhanced fallback evaluation with improved FHIRPath-like support
-            when {
-                expression.startsWith("'") && expression.endsWith("'") -> {
-                    // String literal
-                    JsonPrimitive(expression.substring(1, expression.length - 1))
-                }
-                expression.matches(Regex("\\d+")) -> {
-                    // Number literal
-                    JsonPrimitive(expression.toInt())
-                }
-                expression == "true" || expression == "false" -> {
-                    // Boolean literal
-                    JsonPrimitive(expression.toBoolean())
-                }
-                expression.contains(".") -> {
-                    // Property access path
-                    val parts = expression.split(".")
-                    var current = context
-                    for (part in parts) {
-                        current = extractElementValue(current, part) ?: return JsonNull
-                    }
-                    current
-                }
-                else -> {
-                    // Simple property access
-                    extractElementValue(context, expression) ?: JsonNull
-                }
+            // Use kotlin-fhirpath engine for evaluation - no fallback
+            val contextString = context.toString()
+            val results = fhirPathEngine.evaluate(contextString, expression)
+            if (results.isNotEmpty()) {
+                Json.parseToJsonElement(results.first().toString())
+            } else {
+                JsonNull
             }
         } catch (e: Exception) {
+            // If kotlin-fhirpath fails, return null - no fallback implementation
             JsonNull
         }
     }
