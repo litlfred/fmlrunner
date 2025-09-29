@@ -24,8 +24,21 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
         
+    - name: Setup Java for Kotlin Build
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        
     - name: Install dependencies
       run: npm ci
+      
+    - name: Build Kotlin Core
+      id: kotlin-build
+      continue-on-error: true
+      run: |
+        echo "=== Kotlin/JS Build ==="
+        npm run build:kotlin 2>&1 | tee kotlin-build-output.txt
       
     - name: Run linting
       id: lint
@@ -45,6 +58,13 @@ jobs:
       run: |
         ./node_modules/.bin/jest --testMatch="**/tests/**/*.test.ts" --coverage --coverageReporters=text-lcov 2>&1 | tee coverage-output.txt
       
+    - name: Kotlin Tests
+      id: kotlin-tests
+      continue-on-error: true
+      run: |
+        echo "=== Kotlin Test Results ==="
+        npm run test:kotlin 2>&1 | tee kotlin-tests-output.txt
+        
     - name: FML Compilation Tests
       id: fml-compilation
       continue-on-error: true
@@ -123,6 +143,8 @@ jobs:
           
           // Get step outcomes
           const outcomes = {
+            kotlinBuild: '${{ steps.kotlin-build.outcome }}',
+            kotlinTests: '${{ steps.kotlin-tests.outcome }}',
             lint: '${{ steps.lint.outcome }}',
             build: '${{ steps.build.outcome }}',
             coverage: '${{ steps.coverage.outcome }}',
@@ -134,6 +156,8 @@ jobs:
           
           // Read output files
           const outputs = {
+            kotlinBuild: readOutputFile('kotlin-build-output.txt'),
+            kotlinTests: readOutputFile('kotlin-tests-output.txt'),
             lint: readOutputFile('lint-output.txt'),
             build: readOutputFile('build-output.txt'),
             coverage: readOutputFile('coverage-output.txt'),
@@ -160,6 +184,14 @@ jobs:
 | Test Category | Status | Details | Error Context |
 |---------------|--------|---------|---------------|`;
 
+          // Kotlin Build Status
+          if (outcomes.kotlinBuild === 'success') {
+            qaTable += `\n| Kotlin Build | ✅ Passed | Kotlin/JS compilation and NPM package build | - |`;
+          } else {
+            const errorContext = extractErrorContext(outputs.kotlinBuild, 5);
+            qaTable += `\n| Kotlin Build | ❌ Failed | Kotlin/JS compilation failed | \`\`\`\n${errorContext}\n\`\`\` |`;
+          }
+
           // Build Status
           if (outcomes.build === 'success') {
             qaTable += `\n| Build | ✅ Passed | TypeScript compilation successful | - |`;
@@ -174,6 +206,14 @@ jobs:
           } else {
             const errorContext = extractErrorContext(outputs.lint, 5);
             qaTable += `\n| Linting | ❌ Failed | ESLint validation failed | \`\`\`\n${errorContext}\n\`\`\` |`;
+          }
+          
+          // Kotlin Tests Status
+          if (outcomes.kotlinTests === 'success') {
+            qaTable += `\n| Kotlin Tests | ✅ Passed | Kotlin/JS unit tests | - |`;
+          } else {
+            const errorContext = extractErrorContext(outputs.kotlinTests, 8);
+            qaTable += `\n| Kotlin Tests | ❌ Failed | Kotlin/JS unit tests | \`\`\`\n${errorContext}\n\`\`\` |`;
           }
           
           // FML Compilation Tests
@@ -281,4 +321,5 @@ ${outputs.coverage.split('\n').slice(-20).join('\n')}
         path: |
           coverage/
           dist/
+          build/reports/
           *-output.txt

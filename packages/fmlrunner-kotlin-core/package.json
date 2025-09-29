@@ -2,14 +2,15 @@
   "name": "@litlfred/fmlrunner-core",
   "version": "0.1.0",
   "description": "Core FML Runner logic compiled from Kotlin/JS",
-  "main": "dist/fmlrunner-core.js",
+  "main": "dist/fmlrunner.js",
   "types": "dist/fmlrunner-core.d.ts",
   "files": [
     "dist/"
   ],
   "scripts": {
-    "build": "echo 'Kotlin/JS build placeholder'",
-    "test": "echo 'Kotlin/JS test placeholder'"
+    "build": "cd ../.. && ./gradlew jsJar && mkdir -p packages/fmlrunner-kotlin-core/dist && cp -r build/js/packages/fmlrunner/kotlin/* packages/fmlrunner-kotlin-core/dist/",
+    "test": "cd ../.. && ./gradlew jsNodeTest",
+    "clean": "rm -rf dist/"
   },
   "keywords": [
     "fhir",

@@ -48,6 +48,12 @@ jobs:
         cache: 'npm'
         registry-url: 'https://registry.npmjs.org'
 
+    - name: Setup Java for Kotlin Build
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+
     - name: Install dependencies
       run: npm ci
 
@@ -76,6 +82,11 @@ jobs:
         
         node scripts/version.js set $VERSION
         echo "NEW_VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Build Kotlin Core
+      run: |
+        echo "Building Kotlin/JS core library..."
+        npm run build:kotlin
 
     - name: Run quality checks
       run: |

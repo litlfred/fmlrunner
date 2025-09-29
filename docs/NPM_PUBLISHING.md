@@ -72,6 +72,7 @@ npm config set //registry.npmjs.org/:_authToken YOUR_NPM_TOKEN
 **Publishing Steps:**
 ```bash
 # 1. Quality checks
+npm run build:kotlin   # Build Kotlin/JS core first
 npm run lint
 npm run test
 npm run build
@@ -93,17 +94,19 @@ git push origin --tags
 
 Packages are published in dependency order:
 
-1. **fmlrunner** (core library) - published first
-2. **fmlrunner-rest** (depends on fmlrunner)
-3. **fmlrunner-mcp** (depends on fmlrunner)  
-4. **fmlrunner-web** (depends on fmlrunner)
+1. **@litlfred/fmlrunner-core** (Kotlin/JS core) - published first
+2. **fmlrunner** (main library) - depends on kotlin-core  
+3. **fmlrunner-rest** (depends on fmlrunner)
+4. **fmlrunner-mcp** (depends on fmlrunner)  
+5. **fmlrunner-web** (depends on fmlrunner)
 
 ### Quality Gates
 
 Before publishing, the following checks are performed:
 
+- ✅ **Kotlin Build** - Kotlin/JS compilation and packaging
 - ✅ **Linting** - ESLint validation
-- ✅ **Testing** - All test suites pass
+- ✅ **Testing** - All test suites pass (Kotlin + TypeScript)
 - ✅ **Building** - TypeScript compilation
 - ✅ **Schema Validation** - JSON schemas compile
 - ✅ **Package Verification** - Contents check

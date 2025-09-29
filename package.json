@@ -10,10 +10,12 @@
     "packages/fmlrunner-kotlin-core"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "build:kotlin": "./gradlew jsJar && npm run build --workspace=packages/fmlrunner-kotlin-core",
+    "test:kotlin": "./gradlew jsNodeTest",
+    "build": "npm run build:kotlin && npm run build --workspaces --if-present",
+    "test": "npm run test:kotlin && npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "clean": "npm run clean --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present && ./gradlew clean",
     "dev": "concurrently \"npm run dev --workspace=packages/fmlrunner-rest\"",
     "build:web": "echo 'Web package removed to reduce dependencies'",
     "deploy:web": "echo 'Web package removed to reduce dependencies'",

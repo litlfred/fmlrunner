@@ -133,6 +133,15 @@ function publishPackages(dryRun = false) {
     }
     
     // Publish core package first
+    console.log('Publishing fmlrunner-kotlin-core...');
+    execSync(`cd packages/fmlrunner-kotlin-core && npm publish --access public ${dryRunFlag}`, { stdio: 'inherit' });
+    
+    if (!dryRun) {
+      console.log('⏳ Waiting for npm registry to update...');
+      execSync('sleep 5');
+    }
+    
+    // Publish core package
     console.log('Publishing fmlrunner core library...');
     execSync(`cd packages/fmlrunner && npm publish --access public ${dryRunFlag}`, { stdio: 'inherit' });
     
