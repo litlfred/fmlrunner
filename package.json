@@ -6,7 +6,8 @@
   "workspaces": [
     "packages/fmlrunner",
     "packages/fmlrunner-rest",
-    "packages/fmlrunner-mcp"
+    "packages/fmlrunner-mcp",
+    "packages/fmlrunner-kotlin-core"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",

@@ -1,17 +1,30 @@
 # FML Runner
 
-A Node.js library for compiling and executing FHIR Mapping Language (FML) files to transform healthcare data using FHIR StructureMaps.
+A cross-platform library for compiling and executing FHIR Mapping Language (FML) files to transform healthcare data using FHIR StructureMaps.
 
 ## Overview
 
-FML Runner is designed as a library component for larger application frameworks, providing comprehensive functionality to:
+FML Runner provides shared core business logic between Kotlin/JVM/Android and Node.js/JavaScript platforms, enabling:
 
-1. **Compile** FHIR Mapping Language (FML) content into FHIR StructureMap resources (JSON format)
-2. **Execute** StructureMaps on input content to perform data transformations
-3. **Manage** FHIR terminology resources (ConceptMaps, ValueSets, CodeSystems, StructureDefinitions)
-4. **Process** FHIR Bundles for bulk resource operations
-5. **Provide** REST API endpoints with FHIR-compliant CRUD operations
-6. **Optimize** performance with intelligent caching and FHIRPath integration
+1. **Cross-Platform Compilation** - FHIR Mapping Language (FML) content compilation using shared Kotlin core
+2. **Universal Execution** - StructureMap execution with platform-specific optimizations
+3. **FHIR Terminology Management** - ConceptMaps, ValueSets, CodeSystems with consistent behavior
+4. **Bundle Processing** - FHIR Bundle operations across all platforms
+5. **REST API Endpoints** - FHIR-compliant CRUD operations
+6. **Performance Optimization** - Intelligent caching and FHIRPath integration
+
+## Architecture
+
+### Shared Core (Kotlin Multiplatform)
+- **FML Compiler**: Tokenization and parsing logic
+- **StructureMap Executor**: Transformation engine with FHIRPath support
+- **FHIR Types**: Shared data structures and interfaces
+- **Validation**: Cross-platform resource validation
+
+### Platform-Specific Features
+- **JVM/Android**: HAPI FHIR integration for advanced FHIRPath and validation
+- **JavaScript/Node.js**: Optimized for web and server-side execution
+- **TypeScript**: Full type safety and IDE support
 
 ## Installation
 
