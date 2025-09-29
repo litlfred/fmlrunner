@@ -1,4 +1,4 @@
-import { StructureMap, FmlCompilationResult, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
+import { StructureMap, FmlCompilationResult, FmlSyntaxValidationResult, FmlSyntaxError, FmlSyntaxWarning, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
 import { Logger } from './logger';
 
 /**
@@ -724,6 +724,211 @@ export class FmlCompiler {
         success: false,
         errors: [error instanceof Error ? error.message : 'Unknown compilation error']
       };
+    }
+  }
+
+  /**
+   * Validate FML syntax without compiling to StructureMap
+   * @param fmlContent The FML content to validate
+   * @returns Syntax validation result with detailed error information
+   */
+  validateSyntax(fmlContent: string): FmlSyntaxValidationResult {
+    const errors: FmlSyntaxError[] = [];
+    const warnings: FmlSyntaxWarning[] = [];
+
+    try {
+      // Basic validation
+      if (!fmlContent || fmlContent.trim().length === 0) {
+        errors.push({
+          line: 1,
+          column: 1,
+          message: 'FML content cannot be empty',
+          severity: 'error',
+          code: 'EMPTY_CONTENT'
+        });
+        return { valid: false, errors, warnings };
+      }
+
+      // Check if content has a map declaration (skip comments and whitespace)
+      const trimmedContent = fmlContent.trim();
+      // Remove leading comments to find the actual start
+      const contentWithoutLeadingComments = trimmedContent
+        .replace(/^(?:\/\/.*?\n|\/\*[\s\S]*?\*\/|\s)*/gm, '')
+        .trim();
+      
+      if (!contentWithoutLeadingComments.toLowerCase().startsWith('map')) {
+        errors.push({
+          line: 1,
+          column: 1,
+          message: 'FML content must start with a map declaration',
+          severity: 'error',
+          code: 'MISSING_MAP_DECLARATION'
+        });
+        return { valid: false, errors, warnings };
+      }
+
+      // Attempt tokenization to catch syntax errors
+      const tokenizer = new FmlTokenizer(fmlContent);
+      let tokens: Token[];
+      try {
+        tokens = tokenizer.tokenize();
+      } catch (tokenError) {
+        const error = tokenError as Error;
+        const match = error.message.match(/line (\d+), column (\d+)/);
+        if (match) {
+          errors.push({
+            line: parseInt(match[1]),
+            column: parseInt(match[2]),
+            message: error.message,
+            severity: 'error',
+            code: 'TOKENIZATION_ERROR'
+          });
+        } else {
+          errors.push({
+            line: 1,
+            column: 1,
+            message: `Tokenization error: ${error.message}`,
+            severity: 'error',
+            code: 'TOKENIZATION_ERROR'
+          });
+        }
+        return { valid: false, errors, warnings };
+      }
+
+      // Basic syntax checks on tokens
+      this.validateTokenStructure(tokens, errors, warnings);
+
+      // Attempt parsing to catch structural errors
+      try {
+        const parser = new FmlParser(tokens);
+        parser.parse();
+      } catch (parseError) {
+        const error = parseError as Error;
+        const match = error.message.match(/line (\d+), column (\d+)/);
+        if (match) {
+          errors.push({
+            line: parseInt(match[1]),
+            column: parseInt(match[2]),
+            message: error.message,
+            severity: 'error',
+            code: 'PARSE_ERROR'
+          });
+        } else {
+          errors.push({
+            line: 1,
+            column: 1,
+            message: `Parse error: ${error.message}`,
+            severity: 'error',
+            code: 'PARSE_ERROR'
+          });
+        }
+        return { valid: false, errors, warnings };
+      }
+
+      return {
+        valid: errors.length === 0,
+        errors,
+        warnings
+      };
+
+    } catch (error) {
+      errors.push({
+        line: 1,
+        column: 1,
+        message: error instanceof Error ? error.message : 'Unknown validation error',
+        severity: 'error',
+        code: 'VALIDATION_ERROR'
+      });
+      return { valid: false, errors, warnings };
+    }
+  }
+
+  /**
+   * Validate token structure and add warnings for common issues
+   */
+  private validateTokenStructure(tokens: Token[], errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
+    let hasMapKeyword = false;
+    let hasGroupKeyword = false;
+    let braceCount = 0;
+    let parenCount = 0;
+
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+
+      // Check for required keywords
+      if (token.type === TokenType.MAP) {
+        hasMapKeyword = true;
+      }
+      if (token.type === TokenType.GROUP) {
+        hasGroupKeyword = true;
+      }
+
+      // Track brace/paren balance
+      if (token.type === TokenType.LBRACE) braceCount++;
+      if (token.type === TokenType.RBRACE) braceCount--;
+      if (token.type === TokenType.LPAREN) parenCount++;
+      if (token.type === TokenType.RPAREN) parenCount--;
+
+      // Check for unbalanced brackets
+      if (braceCount < 0) {
+        errors.push({
+          line: token.line,
+          column: token.column,
+          message: 'Unmatched closing brace',
+          severity: 'error',
+          code: 'UNMATCHED_BRACE'
+        });
+      }
+      if (parenCount < 0) {
+        errors.push({
+          line: token.line,
+          column: token.column,
+          message: 'Unmatched closing parenthesis',
+          severity: 'error',
+          code: 'UNMATCHED_PAREN'
+        });
+      }
+    }
+
+    // Final validation
+    if (!hasMapKeyword) {
+      errors.push({
+        line: 1,
+        column: 1,
+        message: 'Missing required map declaration',
+        severity: 'error',
+        code: 'MISSING_MAP'
+      });
+    }
+
+    if (!hasGroupKeyword) {
+      warnings.push({
+        line: 1,
+        column: 1,
+        message: 'No group definitions found',
+        severity: 'warning',
+        code: 'NO_GROUPS'
+      });
+    }
+
+    if (braceCount > 0) {
+      errors.push({
+        line: 1,
+        column: 1,
+        message: `${braceCount} unclosed brace(s)`,
+        severity: 'error',
+        code: 'UNCLOSED_BRACE'
+      });
+    }
+
+    if (parenCount > 0) {
+      errors.push({
+        line: 1,
+        column: 1,
+        message: `${parenCount} unclosed parenthesis(es)`,
+        severity: 'error',
+        code: 'UNCLOSED_PAREN'
+      });
     }
   }
 
