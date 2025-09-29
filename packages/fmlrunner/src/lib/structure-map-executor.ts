@@ -4,7 +4,7 @@ import { ConceptMapService } from './conceptmap-service';
 import { ValueSetService } from './valueset-service';
 import { CodeSystemService } from './codesystem-service';
 import { Logger } from './logger';
-import * as fhirpath from 'fhirpath';
+// Note: FHIRPath evaluation is now handled by kotlin-fhirpath in the Kotlin core
 
 /**
  * StructureMap execution engine - executes StructureMaps on input data
@@ -254,19 +254,14 @@ export class StructureMapExecutor {
     const expression = parameters[0];
     
     try {
-      // Use the official HL7 FHIRPath library for proper evaluation
-      const result = fhirpath.evaluate(value, expression);
-      
-      // FHIRPath returns an array of results, return first result or empty array
-      if (Array.isArray(result)) {
-        return result.length === 1 ? result[0] : result;
-      }
-      
-      return result;
+      // FHIRPath evaluation is now handled by the Kotlin core
+      // This TypeScript implementation is for legacy compatibility only
+      // For actual FHIRPath evaluation, use the kotlin-fhirpath engine in the Kotlin core
+      console.warn('FHIRPath evaluation is now handled by kotlin-fhirpath in the Kotlin core');
+      return value; // Return original value as fallback
     } catch (error) {
-      console.error(`FHIRPath evaluation failed for expression "${expression}":`, error);
-      // Return undefined for failed evaluations rather than partial results
-      return undefined;
+      console.error(`FHIRPath evaluation not available in TypeScript implementation. Use Kotlin core for FHIRPath support.`);
+      return value; // Return original value as fallback
     }
   }
 

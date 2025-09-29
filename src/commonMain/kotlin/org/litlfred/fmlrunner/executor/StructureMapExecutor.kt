@@ -1,16 +1,17 @@
 package org.litlfred.fmlrunner.executor
 
 import org.litlfred.fmlrunner.types.*
-import org.litlfred.fmlrunner.fhirpath.BasicFhirPathEngine
-import org.litlfred.fmlrunner.fhirpath.FhirPathEngine
 import kotlinx.serialization.json.*
+// Use kotlin-fhirpath for FHIRPath evaluation
+import com.github.jingtang10.kotlin.fhirpath.FHIRPathEngine
+import com.github.jingtang10.kotlin.fhirpath.FHIRPathEngineFactory
 
 /**
  * StructureMap execution engine - executes StructureMaps on input data
- * Now uses Kotlin FHIRPath engine instead of Node.js fhirpath library
+ * Now uses kotlin-fhirpath library for cross-platform FHIRPath evaluation
  */
 class StructureMapExecutor {
-    private val fhirPathEngine: FhirPathEngine = createFhirPathEngine()
+    private val fhirPathEngine: FHIRPathEngine = FHIRPathEngineFactory.create()
     
     /**
      * Execute a StructureMap on input content
@@ -213,10 +214,23 @@ class StructureMapExecutor {
     }
 
     /**
-     * Simple expression evaluation using Kotlin FHIRPath engine
+     * Simple expression evaluation using kotlin-fhirpath engine
      */
     private fun evaluateExpression(context: JsonElement, expression: String): JsonElement {
-        return fhirPathEngine.evaluateFirst(context, expression) ?: JsonNull
+        return try {
+            // Convert JsonElement to string for kotlin-fhirpath
+            val contextString = context.toString()
+            // Use kotlin-fhirpath to evaluate the expression
+            val results = fhirPathEngine.evaluate(contextString, expression)
+            // Return first result or JsonNull if no results
+            if (results.isNotEmpty()) {
+                Json.parseToJsonElement(results.first().toString())
+            } else {
+                JsonNull
+            }
+        } catch (e: Exception) {
+            JsonNull
+        }
     }
 
     /**

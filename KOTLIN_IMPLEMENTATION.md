@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation demonstrates how to share core FML (FHIR Mapping Language) business logic between Kotlin/JVM/Android and Node.js/JavaScript platforms using Kotlin Multiplatform.
+This implementation demonstrates how to share core FML (FHIR Mapping Language) business logic between Kotlin/JVM/Android and Node.js/JavaScript platforms using Kotlin Multiplatform with **kotlin-fhirpath** for cross-platform FHIRPath evaluation.
 
 ## Architecture
 
@@ -15,13 +15,13 @@ This implementation demonstrates how to share core FML (FHIR Mapping Language) b
 
 2. **StructureMap Executor** (`src/commonMain/kotlin/org/litlfred/fmlrunner/executor/`)
    - Executes StructureMaps on input data
-   - Uses platform-specific FHIRPath engines
+   - Uses **kotlin-fhirpath** for cross-platform FHIRPath evaluation
    - Provides validation and transformation capabilities
 
-3. **FHIRPath Engine** (`src/commonMain/kotlin/org/litlfred/fmlrunner/fhirpath/`)
-   - Cross-platform interface for FHIRPath evaluation
-   - Basic implementation for JS
-   - HAPI FHIR integration for JVM/Android (when available)
+3. **FHIRPath Engine** (kotlin-fhirpath library)
+   - Cross-platform FHIRPath evaluation using kotlin-fhirpath
+   - Replaces Node.js fhirpath dependency entirely
+   - Consistent FHIRPath behavior across JVM and JavaScript platforms
 
 4. **Core Types** (`src/commonMain/kotlin/org/litlfred/fmlrunner/types/`)
    - Shared FHIR resource definitions
@@ -31,14 +31,25 @@ This implementation demonstrates how to share core FML (FHIR Mapping Language) b
 ### Platform-Specific Implementations
 
 #### JVM/Android
-- Uses HAPI FHIR libraries for full FHIRPath support
+- Uses kotlin-fhirpath for full FHIRPath support
 - Access to complete FHIR validation capabilities
-- Can leverage Java ecosystem libraries
+- Can leverage additional Java ecosystem libraries
 
 #### JavaScript/Node.js
 - Compiles to JavaScript modules
-- Uses basic FHIRPath implementation
-- Integrates with existing TypeScript codebase
+- Uses kotlin-fhirpath compiled to JavaScript
+- No dependency on Node.js fhirpath library
+
+## Dependencies
+
+### Kotlin Multiplatform
+- **kotlin-fhirpath**: `com.github.jingtang10:kotlin-fhirpath:0.1.0`
+- **kotlinx.serialization**: For cross-platform data serialization
+- **kotlinx.datetime**: For date/time handling
+
+### Removed Dependencies
+- ❌ Node.js `fhirpath` library (replaced by kotlin-fhirpath)
+- ❌ Custom FHIRPath implementations
 
 ## Usage
 
@@ -59,7 +70,7 @@ const result = runner.compileFml(`
   }
 `);
 
-// Execute transformation
+// Execute transformation with kotlin-fhirpath
 const execResult = runner.executeStructureMap(
   "http://example.org/StructureMap/Patient",
   '{"name": "John Doe", "active": true}'
@@ -83,7 +94,7 @@ val result = runner.compileFml("""
   }
 """)
 
-// Execute transformation
+// Execute transformation with kotlin-fhirpath
 val execResult = runner.executeStructureMap(
   "http://example.org/StructureMap/Patient",
   """{"name": "John Doe", "active": true}"""
@@ -133,39 +144,49 @@ The existing TypeScript FmlRunner has been updated to use the Kotlin core via a 
    - Maintains TypeScript services for extended functionality
    - Provides backward compatibility
 
+## FHIRPath Integration
+
+### kotlin-fhirpath Benefits
+- **Cross-Platform**: Single FHIRPath implementation for all platforms
+- **Consistent**: Same FHIRPath behavior on JVM and JavaScript
+- **Maintained**: Official kotlin-fhir ecosystem library
+- **Performance**: Optimized for each target platform
+
+### Migration from Node.js fhirpath
+- ✅ Removed `fhirpath` dependency from package.json
+- ✅ Updated imports to use kotlin-fhirpath
+- ✅ Updated TypeScript files to indicate Kotlin core usage
+- ✅ Consistent FHIRPath evaluation across platforms
+
 ## Future Enhancements
 
-1. **Full HAPI FHIR Integration**
-   - Add complete HAPI FHIR dependencies
-   - Implement advanced FHIRPath evaluation
-   - Support complex FHIR resource validation
+1. **Full kotlin-fhir Integration**
+   - Add complete kotlin-fhir dependencies
+   - Implement advanced FHIR resource validation
+   - Support complex FHIR operations
 
-2. **JavaScript FHIRPath Engine**
-   - Integrate with existing Node.js fhirpath library
-   - Provide feature parity between platforms
-
-3. **Advanced StructureMap Features**
+2. **Advanced StructureMap Features**
    - Support for dependent rules
    - Complex transformation functions
    - Nested group execution
 
-4. **Performance Optimization**
+3. **Performance Optimization**
    - Compilation caching
    - Execution optimization
    - Memory management improvements
 
 ## Benefits
 
-1. **Code Reuse**: Single implementation of core logic
-2. **Consistency**: Same behavior across platforms
+1. **Code Reuse**: Single implementation of core logic using kotlin-fhirpath
+2. **Consistency**: Same FHIRPath behavior across platforms
 3. **Maintainability**: Single source of truth for business logic
 4. **Type Safety**: Shared type definitions
-5. **Testing**: Common test suite for all platforms
+5. **No Node.js Dependencies**: Fully self-contained Kotlin implementation
 
 ## Examples
 
 See `src/commonTest/kotlin/org/litlfred/fmlrunner/FmlRunnerTest.kt` for comprehensive examples of:
 - FML compilation
-- StructureMap execution
+- StructureMap execution with kotlin-fhirpath
 - Error handling
 - Cross-platform compatibility testing

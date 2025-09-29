@@ -8,6 +8,7 @@ version = "0.1.0"
 
 repositories {
     mavenCentral()
+    maven("https://jitpack.io")
 }
 
 // Configure JVM toolchain at the project level
@@ -59,6 +60,8 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+                // Use kotlin-fhirpath for FHIRPath evaluation
+                implementation("com.github.jingtang10:kotlin-fhirpath:0.1.0")
             }
         }
         
@@ -71,9 +74,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                // TODO: Add HAPI FHIR libraries when stable
-                // implementation("ca.uhn.hapi.fhir:hapi-fhir-client:7.0.2")
-                // implementation("ca.uhn.hapi.fhir:hapi-fhir-caching-caffeine:7.0.2")
+                // kotlin-fhirpath provides JVM implementation
             }
         }
         
@@ -86,6 +87,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                // kotlin-fhirpath provides JS implementation
             }
         }
         
