@@ -47,13 +47,6 @@ kotlin {
         }
         binaries.executable()
         
-        // Configure JS output for consumption by Node.js/TypeScript
-        compilations.getByName("main") {
-            packageJson {
-                // Remove custom type field to avoid ES module issues
-            }
-        }
-        
         useCommonJs() // Use CommonJS for better Node.js compatibility
     }
     
