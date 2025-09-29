@@ -2,15 +2,17 @@ package org.litlfred.fmlrunner.executor
 
 import org.litlfred.fmlrunner.types.*
 import kotlinx.serialization.json.*
-// Note: kotlin-fhirpath integration will be added when library is available
-// For now, using basic FHIRPath evaluation
+// kotlin-fhirpath for FHIRPath evaluation from https://github.com/jingtang10/kotlin-fhirpath
+// Note: Currently commented out due to firewall blocking JitPack access
+// import com.github.jingtang10.kotlin.fhirpath.FHIRPathEngine
+// import com.github.jingtang10.kotlin.fhirpath.FHIRPathEngineFactory
 
 /**
  * StructureMap execution engine - executes StructureMaps on input data
- * Ready for kotlin-fhirpath integration when library becomes available
+ * Ready for kotlin-fhirpath library integration when network access allows
  */
 class StructureMapExecutor {
-    // Note: Will be replaced with kotlin-fhirpath when available
+    // Note: Will use kotlin-fhirpath when dependency is accessible
     // private val fhirPathEngine: FHIRPathEngine = FHIRPathEngineFactory.create()
     
     /**
@@ -214,11 +216,21 @@ class StructureMapExecutor {
     }
 
     /**
-     * Simple expression evaluation - ready for kotlin-fhirpath integration
+     * Expression evaluation ready for kotlin-fhirpath integration
+     * Will use kotlin-fhirpath engine when dependency is accessible
      */
     private fun evaluateExpression(context: JsonElement, expression: String): JsonElement {
         return try {
-            // Basic FHIRPath-like evaluation (will be replaced with kotlin-fhirpath)
+            // TODO: Replace with kotlin-fhirpath when dependency is accessible
+            // val contextString = context.toString()
+            // val results = fhirPathEngine.evaluate(contextString, expression)
+            // if (results.isNotEmpty()) {
+            //     Json.parseToJsonElement(results.first().toString())
+            // } else {
+            //     JsonNull
+            // }
+            
+            // Fallback evaluation for now
             when {
                 expression.startsWith("'") && expression.endsWith("'") -> {
                     // String literal
