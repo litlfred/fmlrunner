@@ -2,6 +2,8 @@
 
 This Implementation Guide defines a comprehensive test suite for validating FHIR Mapping Language (FML) execution using real-world test cases sourced from community FML projects.
 
+**📍 This documentation is automatically published to [https://litlfred.github.io/fmlrunner/](https://litlfred.github.io/fmlrunner/) via GitHub Pages**
+
 ## Purpose
 
 The FML Execution Validation Test Suite is designed to:

@@ -2,7 +2,7 @@ id: fmlrunner-test-suite
 canonical: http://fmlrunner.org/ImplementationGuide/test-suite
 name: FMLExecutionValidationTestSuite
 title: FML Execution Validation Test Suite
-description: A comprehensive test suite for validating FHIR Mapping Language (FML) execution using real-world test cases sourced from community FML projects.
+description: A comprehensive test suite for validating FHIR Mapping Language (FML) execution using real-world test cases sourced from community FML projects. Published at https://litlfred.github.io/fmlrunner/
 status: draft
 version: 0.1.0
 fhirVersion: 4.0.1

@@ -2,6 +2,8 @@
 
 A comprehensive FHIR Implementation Guide defining a test suite for validating FHIR Mapping Language (FML) execution using real-world test cases.
 
+**📚 [View Published Documentation](https://litlfred.github.io/fmlrunner/)** - Complete test suite with FHIR TestPlan resources
+
 ## Overview
 
 This test suite provides a standardized way to validate FML implementations using:
@@ -9,6 +11,8 @@ This test suite provides a standardized way to validate FML implementations usin
 - Official FHIR test cases from FHIR/fhir-test-cases repository
 - FHIR TestPlan resources for structured test execution
 - Comprehensive licensing compliance for all imported content
+
+The test suite is automatically built and published as a FHIR Implementation Guide to GitHub Pages, making the TestPlan resources and documentation easily accessible for implementers.
 
 ## Quick Start
 
@@ -177,9 +181,21 @@ sushi
 ## Support
 
 For questions or issues:
-- Review the [Implementation Guide](https://litlfred.github.io/fmlrunner/) documentation
+- Review the [Published Test Suite Documentation](https://litlfred.github.io/fmlrunner/) 
 - Check existing [GitHub Issues](https://github.com/litlfred/fmlrunner/issues)
 - Create a new issue for bugs or feature requests
+
+## Published Documentation
+
+The FML Execution Validation Test Suite is automatically built and published to GitHub Pages:
+
+**🔗 [https://litlfred.github.io/fmlrunner/](https://litlfred.github.io/fmlrunner/)**
+
+The published documentation includes:
+- Interactive FHIR TestPlan resources
+- Complete test case specifications
+- Implementation guidance for FML engines
+- License compliance information
 
 ## License
 

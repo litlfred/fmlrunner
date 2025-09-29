@@ -12,6 +12,19 @@ FML Runner is designed as a library component for larger application frameworks,
 4. **Process** FHIR Bundles for bulk resource operations
 5. **Provide** REST API endpoints with FHIR-compliant CRUD operations
 6. **Optimize** performance with intelligent caching and FHIRPath integration
+7. **Validate** FML implementations using a comprehensive test suite with real-world test cases
+
+## FML Execution Validation Test Suite
+
+This repository includes a comprehensive FHIR Implementation Guide-based test suite for validating FML execution. The test suite documentation and TestPlan resources are automatically published to GitHub Pages.
+
+**📚 [View Published Test Suite Documentation](https://litlfred.github.io/fmlrunner/)**
+
+The published documentation includes:
+- Complete test suite overview and usage instructions
+- Real-world test cases from community FML projects  
+- FHIR TestPlan resources for structured validation
+- License compliance documentation for all imported content
 
 ## Installation
 
