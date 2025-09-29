@@ -1,0 +1,24 @@
+{
+  "name": "@litlfred/fmlrunner-core",
+  "version": "0.1.0",
+  "description": "Core FML Runner logic compiled from Kotlin/JS",
+  "main": "dist/fmlrunner-core.js",
+  "types": "dist/fmlrunner-core.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build-kotlin": "gradle jsMainClasses",
+    "prepare": "npm run build-kotlin || echo 'Kotlin build skipped'"
+  },
+  "keywords": [
+    "fhir",
+    "fml",
+    "mapping",
+    "structuremap",
+    "kotlin",
+    "multiplatform"
+  ],
+  "author": "Carl Leitner",
+  "license": "MIT"
+}
