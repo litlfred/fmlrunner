@@ -64,6 +64,37 @@ export interface FmlCompilationResult {
 }
 
 /**
+ * FML syntax validation result
+ */
+export interface FmlSyntaxValidationResult {
+  valid: boolean;
+  errors: FmlSyntaxError[];
+  warnings?: FmlSyntaxWarning[];
+}
+
+/**
+ * FML syntax error
+ */
+export interface FmlSyntaxError {
+  line: number;
+  column: number;
+  message: string;
+  severity: 'error';
+  code?: string;
+}
+
+/**
+ * FML syntax warning
+ */
+export interface FmlSyntaxWarning {
+  line: number;
+  column: number;
+  message: string;
+  severity: 'warning';
+  code?: string;
+}
+
+/**
  * StructureMap execution result
  */
 export interface ExecutionResult {

@@ -87,8 +87,9 @@ export class FmlRunnerApi {
     // Enhanced execution with validation
     apiRouter.post('/execute-with-validation', this.executeWithValidation.bind(this));
 
-    // Validation endpoint
+    // Validation endpoints
     apiRouter.post('/validate', this.validateResource.bind(this));
+    apiRouter.post('/fml/validate-syntax', this.validateFmlSyntax.bind(this));
 
     // Health check endpoint
     apiRouter.get('/health', this.healthCheck.bind(this));
@@ -730,6 +731,78 @@ export class FmlRunnerApi {
         res.json(operationOutcome);
       } else {
         res.status(400).json(operationOutcome);
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Validate FML syntax
+   */
+  private async validateFmlSyntax(req: Request, res: Response): Promise<void> {
+    try {
+      const { fmlContent } = req.body;
+
+      if (fmlContent === undefined || fmlContent === null) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'fmlContent is required'
+          }]
+        });
+        return;
+      }
+
+      const result = this.fmlRunner.validateFmlSyntax(fmlContent);
+
+      if (result.valid) {
+        res.json({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'information',
+              code: 'informational',
+              diagnostics: 'FML syntax is valid'
+            },
+            // Include warnings if any
+            ...(result.warnings || []).map(warning => ({
+              severity: 'warning' as const,
+              code: 'informational' as const,
+              diagnostics: warning.message,
+              location: [`line ${warning.line}, column ${warning.column}`]
+            }))
+          ]
+        });
+      } else {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [
+            // Add errors
+            ...result.errors.map(error => ({
+              severity: 'error' as const,
+              code: 'invalid' as const,
+              diagnostics: error.message,
+              location: [`line ${error.line}, column ${error.column}`]
+            })),
+            // Add warnings if any
+            ...(result.warnings || []).map(warning => ({
+              severity: 'warning' as const,
+              code: 'informational' as const,
+              diagnostics: warning.message,
+              location: [`line ${warning.line}, column ${warning.column}`]
+            }))
+          ]
+        });
       }
     } catch (error) {
       res.status(500).json({
