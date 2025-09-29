@@ -9,7 +9,7 @@ version = "0.1.0"
 repositories {
     mavenCentral()
     // JitPack repository for kotlin-fhirpath dependency  
-    // Note: Currently blocked by firewall - will be added when network access available
+    // Note: JitPack access still blocked by network firewall
     // maven("https://jitpack.io")
 }
 
@@ -63,7 +63,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
                 // kotlin-fhirpath dependency from https://github.com/jingtang10/kotlin-fhirpath
-                // Note: Currently blocked by firewall - will be added when network access available
+                // Note: JitPack access still blocked - will integrate when network allows
                 // implementation("com.github.jingtang10:kotlin-fhirpath:0.1.0")
             }
         }
