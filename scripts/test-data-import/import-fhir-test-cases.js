@@ -15,7 +15,7 @@ const FHIR_TEST_CASES_RAW_BASE = 'https://raw.githubusercontent.com/FHIR/fhir-te
 const STRUCTURE_MAPPING_PATH = 'r5/structure-mapping';
 
 // Output directory
-const OUTPUT_DIR = path.join(__dirname, '../../input/testdata/fhir-test-cases');
+const OUTPUT_DIR = path.join(__dirname, '../../input/examples/fhir-test-cases');
 
 // HL7 License header template
 const HL7_LICENSE_HEADER = {

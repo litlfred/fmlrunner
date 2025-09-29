@@ -44,21 +44,24 @@ Test assertions use FHIRPath expressions to validate:
 
 ## Test Data Organization
 
-Test data is organized in the `input/testdata/` directory:
+Test data is organized in the `input/examples/` directory:
 
 ```
-input/testdata/
+input/examples/
 ├── matchbox/
 │   ├── qr2patgender/
 │   │   ├── qr2patgender.map
 │   │   ├── qr-input.json
 │   │   └── patient-output.json
 │   └── test-cases-metadata.json
-└── fhir-test-cases/
-    ├── tutorial-step1/
-    │   ├── tutorial-step1.map
-    │   └── tutorial-input.json
-    └── test-cases-metadata.json
+├── fhir-test-cases/
+│   ├── tutorial-step1/
+│   │   ├── tutorial-step1.map
+│   │   └── tutorial-input.json
+│   └── test-cases-metadata.json
+├── QuestionnaireResponse-qr-sample.json
+├── Patient-patient-sample.json
+└── Bundle-tutorial-input.json
 ```
 
 Each test case group contains:

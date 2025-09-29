@@ -47,18 +47,21 @@ input/
 ├── fsh/
 │   └── tests/
 │       └── FMLExecutionValidationTestPlan.fsh
-├── testdata/
+├── examples/
 │   ├── matchbox/
 │   │   ├── qr2patgender/
 │   │   │   ├── qr2patgender.map
 │   │   │   ├── qr-input.json
 │   │   │   └── patient-output.json
 │   │   └── test-cases-metadata.json
-│   └── fhir-test-cases/
-│       ├── tutorial-step1/
-│       │   ├── tutorial-step1.map
-│       │   └── tutorial-input.json
-│       └── test-cases-metadata.json
+│   ├── fhir-test-cases/
+│   │   ├── tutorial-step1/
+│   │   │   ├── tutorial-step1.map
+│   │   │   └── tutorial-input.json
+│   │   └── test-cases-metadata.json
+│   ├── QuestionnaireResponse-qr-sample.json
+│   ├── Patient-patient-sample.json
+│   └── Bundle-tutorial-input.json
 └── pagecontent/
     ├── index.md
     ├── test-suite.md
@@ -113,7 +116,7 @@ Each test case includes:
 ### Example Test Case
 
 ```
-input/testdata/matchbox/qr2patgender/
+input/examples/matchbox/qr2patgender/
 ├── qr2patgender.map          # FML mapping
 ├── qr-input.json            # Input QuestionnaireResponse
 └── patient-output.json      # Expected Patient output
@@ -158,6 +161,11 @@ sushi
 ### Validate FSH
 ```bash
 sushi -s
+```
+
+### Validate structure
+```bash
+npm run test-suite:validate
 ```
 
 ### Update test data

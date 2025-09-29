@@ -14,8 +14,8 @@ async function generateTestPlan() {
   console.log('Generating updated TestPlan...');
   
   // Load metadata from both sources
-  const matchboxMetadataPath = path.join(__dirname, '../../input/testdata/matchbox/test-cases-metadata.json');
-  const fhirTestCasesMetadataPath = path.join(__dirname, '../../input/testdata/fhir-test-cases/test-cases-metadata.json');
+  const matchboxMetadataPath = path.join(__dirname, '../../input/examples/matchbox/test-cases-metadata.json');
+  const fhirTestCasesMetadataPath = path.join(__dirname, '../../input/examples/fhir-test-cases/test-cases-metadata.json');
   
   let matchboxTestCases = [];
   let fhirTestCases = [];

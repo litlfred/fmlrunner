@@ -15,7 +15,7 @@ const MATCHBOX_RAW_BASE = 'https://raw.githubusercontent.com/ahdis/matchbox/main
 const TEST_RESOURCES_PATH = 'matchbox-server/src/test/resources';
 
 // Output directory
-const OUTPUT_DIR = path.join(__dirname, '../../input/testdata/matchbox');
+const OUTPUT_DIR = path.join(__dirname, '../../input/examples/matchbox');
 
 // Apache 2.0 License header template
 const APACHE_LICENSE_HEADER = {

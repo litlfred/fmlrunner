@@ -13,14 +13,11 @@ publisher:
   url: https://github.com/litlfred/fmlrunner
 jurisdiction: http://unstats.un.org/unsd/methods/m49/m49.htm#001 "World"
 
-dependencies:
-  hl7.fhir.uv.extensions: 1.0.0
-
 parameters:
   show-inherited-invariants: false
   usage-stats-opt-out: true
   path-resource:
-    - input/testdata
+    - input/examples
   path-pages:
     - input/pagecontent
   path-liquid:

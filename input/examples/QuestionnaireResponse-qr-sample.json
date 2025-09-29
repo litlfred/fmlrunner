@@ -1,0 +1,16 @@
+{
+  "resourceType": "QuestionnaireResponse",
+  "id": "qr-sample",
+  "status": "completed",
+  "item": [
+    {
+      "linkId": "gender",
+      "text": "Gender",
+      "answer": [
+        {
+          "valueString": "male"
+        }
+      ]
+    }
+  ]
+}

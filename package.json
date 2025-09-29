@@ -20,6 +20,7 @@
     "test-suite:import-matchbox": "node scripts/test-data-import/import-matchbox.js",
     "test-suite:import-fhir": "node scripts/test-data-import/import-fhir-test-cases.js",
     "test-suite:generate": "node -e \"require('./scripts/test-data-import/import-all.js').generateTestPlan()\"",
+    "test-suite:validate": "node scripts/validate-test-suite.js",
     "version:patch": "node scripts/version.js bump patch",
     "version:minor": "node scripts/version.js bump minor", 
     "version:major": "node scripts/version.js bump major",

@@ -1,0 +1,19 @@
+{
+  "resourceType": "Bundle",
+  "id": "tutorial-input",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "patient1",
+        "name": [
+          {
+            "family": "Doe",
+            "given": ["John"]
+          }
+        ]
+      }
+    }
+  ]
+}
