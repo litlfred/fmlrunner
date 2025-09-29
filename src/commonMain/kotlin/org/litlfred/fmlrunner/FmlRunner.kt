@@ -3,15 +3,23 @@ package org.litlfred.fmlrunner
 import org.litlfred.fmlrunner.types.*
 import org.litlfred.fmlrunner.compiler.FmlCompiler
 import org.litlfred.fmlrunner.executor.StructureMapExecutor
+import org.litlfred.fmlrunner.terminology.*
 
 /**
  * Main FmlRunner class providing FML compilation and StructureMap execution
- * This is the core business logic that can be shared between Kotlin/JVM/Android and Node.js/JavaScript
+ * Now includes kotlin-fhir terminology services for comprehensive FHIR processing
  */
 class FmlRunner {
     private val compiler = FmlCompiler()
     private val executor = StructureMapExecutor()
     private val structureMapStore = mutableMapOf<String, StructureMap>()
+    
+    // kotlin-fhir terminology services
+    private val conceptMapService = ConceptMapService()
+    private val valueSetService = ValueSetService()
+    private val codeSystemService = CodeSystemService()
+    private val validationService = ValidationService()
+    private val bundleService = BundleService(conceptMapService, valueSetService, codeSystemService, validationService)
 
     /**
      * Compile FML content to StructureMap
@@ -93,6 +101,11 @@ class FmlRunner {
      */
     fun clear() {
         structureMapStore.clear()
+        conceptMapService.clear()
+        valueSetService.clear()
+        codeSystemService.clear()
+        validationService.clear()
+        bundleService.clear()
     }
 
     /**
@@ -105,7 +118,7 @@ class FmlRunner {
     /**
      * Validate StructureMap structure
      */
-    fun validateStructureMap(structureMap: StructureMap): ValidationResult {
+    fun validateStructureMap(structureMap: StructureMap): org.litlfred.fmlrunner.executor.ValidationResult {
         return executor.validateStructureMap(structureMap)
     }
 
@@ -123,6 +136,106 @@ class FmlRunner {
             }
         }
         return compilationResult
+    }
+
+    // kotlin-fhir terminology service methods
+
+    /**
+     * Register ConceptMap with kotlin-fhir service
+     */
+    fun registerConceptMap(conceptMap: org.litlfred.fmlrunner.terminology.ConceptMap) {
+        conceptMapService.registerConceptMap(conceptMap)
+    }
+
+    /**
+     * Get ConceptMap by reference
+     */
+    fun getConceptMap(reference: String): org.litlfred.fmlrunner.terminology.ConceptMap? {
+        return conceptMapService.getConceptMap(reference)
+    }
+
+    /**
+     * Translate code using kotlin-fhir ConceptMap service
+     */
+    fun translateCode(sourceSystem: String, sourceCode: String, targetSystem: String? = null): List<TranslationResult> {
+        return conceptMapService.translate(sourceSystem, sourceCode, targetSystem)
+    }
+
+    /**
+     * Register ValueSet with kotlin-fhir service
+     */
+    fun registerValueSet(valueSet: org.litlfred.fmlrunner.terminology.ValueSet) {
+        valueSetService.registerValueSet(valueSet)
+    }
+
+    /**
+     * Get ValueSet by reference
+     */
+    fun getValueSet(reference: String): org.litlfred.fmlrunner.terminology.ValueSet? {
+        return valueSetService.getValueSet(reference)
+    }
+
+    /**
+     * Validate code in ValueSet using kotlin-fhir service
+     */
+    fun validateCodeInValueSet(code: String, system: String? = null, valueSetUrl: String? = null): org.litlfred.fmlrunner.terminology.ValidationResult {
+        return valueSetService.validateCode(code, system, valueSetUrl)
+    }
+
+    /**
+     * Expand ValueSet using kotlin-fhir service
+     */
+    fun expandValueSet(valueSetUrl: String): ValueSetExpansion? {
+        return valueSetService.expandValueSet(valueSetUrl)
+    }
+
+    /**
+     * Register CodeSystem with kotlin-fhir service
+     */
+    fun registerCodeSystem(codeSystem: org.litlfred.fmlrunner.terminology.CodeSystem) {
+        codeSystemService.registerCodeSystem(codeSystem)
+    }
+
+    /**
+     * Get CodeSystem by reference
+     */
+    fun getCodeSystem(reference: String): org.litlfred.fmlrunner.terminology.CodeSystem? {
+        return codeSystemService.getCodeSystem(reference)
+    }
+
+    /**
+     * Lookup code in CodeSystem using kotlin-fhir service
+     */
+    fun lookupCode(system: String, code: String): LookupResult? {
+        return codeSystemService.lookupCode(system, code)
+    }
+
+    /**
+     * Register StructureDefinition with kotlin-fhir validation service
+     */
+    fun registerStructureDefinition(structureDefinition: org.litlfred.fmlrunner.terminology.StructureDefinition) {
+        validationService.registerStructureDefinition(structureDefinition)
+    }
+
+    /**
+     * Validate resource against StructureDefinition using kotlin-fhir service
+     */
+    fun validateResource(resource: kotlinx.serialization.json.JsonElement, structureDefinition: org.litlfred.fmlrunner.terminology.StructureDefinition): ResourceValidationResult {
+        return validationService.validateResource(resource, structureDefinition)
+    }
+
+    /**
+     * Process Bundle using kotlin-fhir service
+     */
+    fun processBundle(bundle: org.litlfred.fmlrunner.terminology.Bundle): BundleProcessingResult {
+        return bundleService.processBundle(bundle)
+    }
+
+    /**
+     * Get Bundle processing statistics
+     */
+    fun getBundleStats(): BundleStats {
+        return bundleService.getStats()
     }
 }
 

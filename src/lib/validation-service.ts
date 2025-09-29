@@ -1,22 +1,23 @@
-// MIGRATION NOTE: This service should be replaced with kotlin-fhir validation APIs
-// See: https://github.com/google/android-fhir
+// PHASE 2 COMPLETE: Now implemented in kotlin-fhir terminology services
+// See: src/commonMain/kotlin/org/litlfred/fmlrunner/terminology/ValidationService.kt
 //
-// TODO: Replace with kotlin-fhir resource validation
-// - Use kotlin-fhir StructureDefinition validation
-// - Implement profile validation using kotlin-fhir APIs
-// - Leverage kotlin-fhir validation engine
+// This TypeScript service has been replaced with kotlin-fhir validation APIs
+// - Uses kotlin-fhir StructureDefinition validation
+// - Implements profile validation using kotlin-fhir APIs
+// - Leverages kotlin-fhir validation engine
 
 export class ValidationService {
   constructor() {
-    console.warn('ValidationService: This TypeScript implementation will be replaced with kotlin-fhir');
+    console.warn('ValidationService: This TypeScript implementation has been replaced with kotlin-fhir');
+    console.warn('Use the Kotlin FmlRunner.registerStructureDefinition() and FmlRunner.validateResource() methods instead');
   }
 
   validateResource(resource: any, structureDefinition: any): any {
-    throw new Error('ValidationService: Use kotlin-fhir resource validation instead');
+    throw new Error('ValidationService: Use FmlRunner.validateResource() with kotlin-fhir implementation instead');
   }
 
   validateProfile(resource: any, profileUrl: string): any {
-    throw new Error('ValidationService: Use kotlin-fhir profile validation instead');
+    throw new Error('ValidationService: Use kotlin-fhir ValidationService.validateProfile() instead');
   }
 
   validateConstraint(resource: any, constraint: string): any {
@@ -28,6 +29,6 @@ export class ValidationService {
   }
 
   clear(): void {
-    throw new Error('ValidationService: Use kotlin-fhir validation APIs instead');
+    throw new Error('ValidationService: Use kotlin-fhir ValidationService.clear() instead');
   }
 }

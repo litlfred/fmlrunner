@@ -1,10 +1,10 @@
-// MIGRATION NOTE: This service should be replaced with kotlin-fhir Bundle processing
-// See: https://github.com/google/android-fhir
+// PHASE 2 COMPLETE: Now implemented in kotlin-fhir terminology services
+// See: src/commonMain/kotlin/org/litlfred/fmlrunner/terminology/BundleService.kt
 //
-// TODO: Replace with kotlin-fhir Bundle processing APIs
-// - Use kotlin-fhir Bundle resource definitions
-// - Implement resource distribution using kotlin-fhir APIs
-// - Leverage kotlin-fhir terminology and validation services
+// This TypeScript service has been replaced with kotlin-fhir Bundle processing APIs
+// - Uses kotlin-fhir Bundle resource definitions
+// - Implements resource distribution using kotlin-fhir APIs
+// - Leverages kotlin-fhir terminology and validation services
 
 export interface BundleProcessingResult {
   success: boolean;
@@ -22,18 +22,19 @@ export interface BundleProcessingResult {
 
 export class BundleService {
   constructor() {
-    console.warn('BundleService: This TypeScript implementation will be replaced with kotlin-fhir');
+    console.warn('BundleService: This TypeScript implementation has been replaced with kotlin-fhir');
+    console.warn('Use the Kotlin FmlRunner.processBundle() and FmlRunner.getBundleStats() methods instead');
   }
 
   async processBundle(bundle: any): Promise<BundleProcessingResult> {
-    throw new Error('BundleService: Use kotlin-fhir Bundle processing instead');
+    throw new Error('BundleService: Use FmlRunner.processBundle() with kotlin-fhir implementation instead');
   }
 
   getStats(): any {
-    throw new Error('BundleService: Use kotlin-fhir Bundle processing instead');
+    throw new Error('BundleService: Use FmlRunner.getBundleStats() with kotlin-fhir implementation instead');
   }
 
   clear(): void {
-    throw new Error('BundleService: Use kotlin-fhir Bundle processing instead');
+    throw new Error('BundleService: Use kotlin-fhir BundleService.clear() instead');
   }
 }

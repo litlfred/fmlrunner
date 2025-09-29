@@ -2,16 +2,16 @@ package org.litlfred.fmlrunner.executor
 
 import org.litlfred.fmlrunner.types.*
 import kotlinx.serialization.json.*
-// Use kotlin-fhirpath for FHIRPath evaluation
-import com.github.jingtang10.kotlin.fhirpath.FHIRPathEngine
-import com.github.jingtang10.kotlin.fhirpath.FHIRPathEngineFactory
+// Note: kotlin-fhirpath integration will be added when library is available
+// For now, using basic FHIRPath evaluation
 
 /**
  * StructureMap execution engine - executes StructureMaps on input data
- * Now uses kotlin-fhirpath library for cross-platform FHIRPath evaluation
+ * Ready for kotlin-fhirpath integration when library becomes available
  */
 class StructureMapExecutor {
-    private val fhirPathEngine: FHIRPathEngine = FHIRPathEngineFactory.create()
+    // Note: Will be replaced with kotlin-fhirpath when available
+    // private val fhirPathEngine: FHIRPathEngine = FHIRPathEngineFactory.create()
     
     /**
      * Execute a StructureMap on input content
@@ -36,7 +36,7 @@ class StructureMapExecutor {
 
             ExecutionResult(
                 success = true,
-                result = json.encodeToString(result)
+                result = Json.encodeToString(JsonElement.serializer(), result)
             )
         } catch (e: Exception) {
             ExecutionResult(
@@ -214,19 +214,37 @@ class StructureMapExecutor {
     }
 
     /**
-     * Simple expression evaluation using kotlin-fhirpath engine
+     * Simple expression evaluation - ready for kotlin-fhirpath integration
      */
     private fun evaluateExpression(context: JsonElement, expression: String): JsonElement {
         return try {
-            // Convert JsonElement to string for kotlin-fhirpath
-            val contextString = context.toString()
-            // Use kotlin-fhirpath to evaluate the expression
-            val results = fhirPathEngine.evaluate(contextString, expression)
-            // Return first result or JsonNull if no results
-            if (results.isNotEmpty()) {
-                Json.parseToJsonElement(results.first().toString())
-            } else {
-                JsonNull
+            // Basic FHIRPath-like evaluation (will be replaced with kotlin-fhirpath)
+            when {
+                expression.startsWith("'") && expression.endsWith("'") -> {
+                    // String literal
+                    JsonPrimitive(expression.substring(1, expression.length - 1))
+                }
+                expression.matches(Regex("\\d+")) -> {
+                    // Number literal
+                    JsonPrimitive(expression.toInt())
+                }
+                expression == "true" || expression == "false" -> {
+                    // Boolean literal
+                    JsonPrimitive(expression.toBoolean())
+                }
+                expression.contains(".") -> {
+                    // Property access
+                    val parts = expression.split(".")
+                    var current = context
+                    for (part in parts) {
+                        current = extractElementValue(current, part) ?: return JsonNull
+                    }
+                    current
+                }
+                else -> {
+                    // Simple property access
+                    extractElementValue(context, expression) ?: JsonNull
+                }
             }
         } catch (e: Exception) {
             JsonNull

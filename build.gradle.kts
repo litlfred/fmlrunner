@@ -8,7 +8,8 @@ version = "0.1.0"
 
 repositories {
     mavenCentral()
-    maven("https://jitpack.io")
+    // Note: JitPack repository for kotlin-fhirpath will be added when available
+    // maven("https://jitpack.io")
 }
 
 // Configure JVM toolchain at the project level
@@ -60,8 +61,8 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
-                // Use kotlin-fhirpath for FHIRPath evaluation
-                implementation("com.github.jingtang10:kotlin-fhirpath:0.1.0")
+                // Note: kotlin-fhirpath integration will be added when available
+                // For now, using our own kotlin-fhir compatible implementations
             }
         }
         
