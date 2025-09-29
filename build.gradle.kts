@@ -50,7 +50,7 @@ kotlin {
         // Configure JS output for consumption by Node.js/TypeScript
         compilations.getByName("main") {
             packageJson {
-                customField("type", "module")
+                // Remove custom type field to avoid ES module issues
             }
         }
         

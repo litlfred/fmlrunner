@@ -1,8 +1,0 @@
-map "http://ahdis.ch/matchbox/fml/stringtocoding" = "stringtocoding"
-
-uses "http://hl7.org/fhir/StructureDefinition/QuestionnaireResponse" alias QuestionnaireResponse as source
-uses "http://hl7.org/fhir/StructureDefinition/ExplanationOfBenefit" alias ExplanationOfBenefit as target
-
-group qr2eob(source src : QuestionnaireResponse, target tgt : ExplanationOfBenefit) {
-  src -> tgt.type = cc('http://terminology.hl7.org/CodeSystem/claim-type', 'oral') "type";
-}

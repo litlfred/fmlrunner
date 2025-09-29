@@ -1,5 +1,6 @@
 package org.litlfred.fmlrunner
 
+import org.litlfred.fmlrunner.types.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -52,7 +53,11 @@ class FmlRunnerTest {
                                 StructureMapGroupRuleSource(context = "src", element = "name")
                             ),
                             target = listOf(
-                                StructureMapGroupRuleTarget(context = "tgt", element = "fullName")
+                                StructureMapGroupRuleTarget(
+                                    context = "tgt", 
+                                    contextType = ContextType.VARIABLE, 
+                                    element = "fullName"
+                                )
                             )
                         )
                     )
