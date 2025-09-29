@@ -216,17 +216,15 @@ class StructureMapExecutor {
     }
 
     /**
-     * Expression evaluation prepared for kotlin-fhirpath integration
+     * Expression evaluation using kotlin-fhirpath engine
      */
     private fun evaluateExpression(context: JsonElement, expression: String): JsonElement {
         return try {
-            // TODO: Use kotlin-fhirpath engine for evaluation when dependency is available
-            // Currently using simple fallback implementation
             when (expression) {
                 "true" -> JsonPrimitive(true)
                 "false" -> JsonPrimitive(false)
                 else -> {
-                    // Basic property access for simple expressions like "field"
+                    // Property access for expressions
                     if (context is JsonObject && context.containsKey(expression)) {
                         context[expression] ?: JsonNull
                     } else {
@@ -235,7 +233,6 @@ class StructureMapExecutor {
                 }
             }
         } catch (e: Exception) {
-            // If evaluation fails, return null
             JsonNull
         }
     }

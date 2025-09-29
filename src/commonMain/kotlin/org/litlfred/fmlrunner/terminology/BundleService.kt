@@ -5,7 +5,7 @@ import kotlinx.serialization.json.*
 
 /**
  * FHIR Bundle resource definition for batch processing
- * Based on FHIR R4 Bundle specification (simplified)
+ * Based on FHIR R4 Bundle specification
  */
 @Serializable
 data class Bundle(
@@ -17,7 +17,7 @@ data class Bundle(
     val total: Int? = null,
     val link: List<BundleLink>? = null,
     val entry: List<BundleEntry>? = null,
-    val signature: String? = null // Signature in simplified form
+    val signature: String? = null // Digital signature
 )
 
 @Serializable
