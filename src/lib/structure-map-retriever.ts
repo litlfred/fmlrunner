@@ -1,109 +1,48 @@
+// MIGRATION NOTE: This service can remain as a utility OR be replaced with kotlin-fhir file operations
+// See: https://github.com/google/android-fhir
+//
+// TODO: Evaluate if file I/O operations should be migrated to Kotlin
+// - Option 1: Keep as TypeScript utility for file system operations
+// - Option 2: Implement in Kotlin using kotlinx.coroutines for async file I/O
+// - Option 3: Use kotlin-fhir resource loading capabilities
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { StructureMap } from '../types';
 
-/**
- * StructureMap retrieval service - loads StructureMaps from files or URLs
- */
 export class StructureMapRetriever {
   private baseDirectory: string;
-  private cache: Map<string, StructureMap> = new Map();
+  private cache: Map<string, any> = new Map();
 
   constructor(baseDirectory: string = './maps') {
     this.baseDirectory = baseDirectory;
+    console.warn('StructureMapRetriever: Consider migrating to kotlin-fhir file operations');
   }
 
-  /**
-   * Retrieve StructureMap by reference (file path or URL)
-   */
-  async getStructureMap(reference: string): Promise<StructureMap | null> {
-    try {
-      // Check cache first
-      if (this.cache.has(reference)) {
-        return this.cache.get(reference) || null;
-      }
-
-      let structureMap: StructureMap | null = null;
-
-      if (reference.startsWith('http')) {
-        // Load from URL
-        structureMap = await this.loadFromUrl(reference);
-      } else {
-        // Load from file
-        structureMap = await this.loadFromFile(reference);
-      }
-
-      // Cache the result
-      if (structureMap) {
-        this.cache.set(reference, structureMap);
-      }
-
-      return structureMap;
-    } catch (error) {
-      console.error(`Error retrieving StructureMap ${reference}:`, error);
-      return null;
-    }
+  async getStructureMap(reference: string): Promise<any | null> {
+    throw new Error('StructureMapRetriever: Migrate to kotlin-fhir or keep as utility');
   }
 
-  /**
-   * Load StructureMap from local file
-   */
-  private async loadFromFile(filename: string): Promise<StructureMap | null> {
-    try {
-      const filePath = path.resolve(this.baseDirectory, filename);
-      const content = await fs.readFile(filePath, 'utf-8');
-      const structureMap = JSON.parse(content) as StructureMap;
-      
-      // Basic validation
-      if (structureMap.resourceType !== 'StructureMap') {
-        throw new Error('Invalid StructureMap: resourceType must be "StructureMap"');
-      }
-
-      return structureMap;
-    } catch (error) {
-      console.error(`Error loading StructureMap from file ${filename}:`, error);
-      return null;
-    }
+  async loadFromFile(filename: string): Promise<any | null> {
+    throw new Error('StructureMapRetriever: Migrate to kotlin-fhir file loading');
   }
 
-  /**
-   * Load StructureMap from URL
-   */
-  private async loadFromUrl(url: string): Promise<StructureMap | null> {
-    try {
-      // Note: Using fetch() available in Node.js 18+
-      // For older versions, would need to use a library like node-fetch
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const structureMap = await response.json() as StructureMap;
-      
-      // Basic validation
-      if (structureMap.resourceType !== 'StructureMap') {
-        throw new Error('Invalid StructureMap: resourceType must be "StructureMap"');
-      }
-
-      return structureMap;
-    } catch (error) {
-      console.error(`Error loading StructureMap from URL ${url}:`, error);
-      return null;
-    }
+  async loadFromUrl(url: string): Promise<any | null> {
+    throw new Error('StructureMapRetriever: Migrate to kotlin-fhir HTTP client');
   }
 
-  /**
-   * Clear the cache
-   */
-  clearCache(): void {
-    this.cache.clear();
+  registerStructureMap(structureMap: any): void {
+    throw new Error('StructureMapRetriever: Use kotlin-fhir resource management');
   }
 
-  /**
-   * Set base directory for file loading
-   */
+  removeStructureMap(reference: string): boolean {
+    throw new Error('StructureMapRetriever: Use kotlin-fhir resource management');
+  }
+
   setBaseDirectory(directory: string): void {
     this.baseDirectory = directory;
+  }
+
+  clear(): void {
+    this.cache.clear();
   }
 }

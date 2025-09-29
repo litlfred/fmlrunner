@@ -1,154 +1,45 @@
-import { ConceptMap } from '../types';
+// MIGRATION NOTE: This service should be replaced with kotlin-fhir ConceptMap APIs
+// See: https://github.com/google/android-fhir
+// 
+// TODO: Replace with kotlin-fhir ConceptMap validation and translation services
+// - Use kotlin-fhir ConceptMap resource definitions
+// - Implement concept translation using kotlin-fhir APIs
+// - Leverage kotlin-fhir terminology capabilities
 
-/**
- * Service for managing ConceptMap resources
- */
 export class ConceptMapService {
-  private conceptMaps: Map<string, ConceptMap> = new Map();
-
-  /**
-   * Register a ConceptMap resource
-   */
-  registerConceptMap(conceptMap: ConceptMap): void {
-    if (conceptMap.id) {
-      this.conceptMaps.set(conceptMap.id, conceptMap);
-    }
-    if (conceptMap.url) {
-      this.conceptMaps.set(conceptMap.url, conceptMap);
-    }
+  constructor() {
+    console.warn('ConceptMapService: This TypeScript implementation will be replaced with kotlin-fhir');
   }
 
-  /**
-   * Get ConceptMap by ID or URL
-   */
-  getConceptMap(reference: string): ConceptMap | null {
-    return this.conceptMaps.get(reference) || null;
+  registerConceptMap(conceptMap: any): void {
+    throw new Error('ConceptMapService: Use kotlin-fhir ConceptMap APIs instead');
   }
 
-  /**
-   * Get all ConceptMaps
-   */
-  getAllConceptMaps(): ConceptMap[] {
-    const unique = new Map<string, ConceptMap>();
-    this.conceptMaps.forEach((conceptMap) => {
-      const key = conceptMap.id || conceptMap.url || Math.random().toString();
-      unique.set(key, conceptMap);
-    });
-    return Array.from(unique.values());
+  getConceptMap(reference: string): any | null {
+    throw new Error('ConceptMapService: Use kotlin-fhir ConceptMap APIs instead');
   }
 
-  /**
-   * Search ConceptMaps by parameters
-   */
-  searchConceptMaps(params: {
-    name?: string;
-    status?: string;
-    url?: string;
-    source?: string;
-    target?: string;
-  }): ConceptMap[] {
-    let results = this.getAllConceptMaps();
-
-    if (params.name) {
-      results = results.filter(cm => 
-        cm.name?.toLowerCase().includes(params.name!.toLowerCase())
-      );
-    }
-
-    if (params.status) {
-      results = results.filter(cm => cm.status === params.status);
-    }
-
-    if (params.url) {
-      results = results.filter(cm => cm.url === params.url);
-    }
-
-    if (params.source) {
-      results = results.filter(cm => 
-        cm.sourceUri === params.source || cm.sourceCanonical === params.source
-      );
-    }
-
-    if (params.target) {
-      results = results.filter(cm => 
-        cm.targetUri === params.target || cm.targetCanonical === params.target
-      );
-    }
-
-    return results;
+  getAllConceptMaps(): any[] {
+    throw new Error('ConceptMapService: Use kotlin-fhir ConceptMap APIs instead');
   }
 
-  /**
-   * Remove ConceptMap by ID or URL
-   */
+  searchConceptMaps(params: any): any[] {
+    throw new Error('ConceptMapService: Use kotlin-fhir ConceptMap APIs instead');
+  }
+
   removeConceptMap(reference: string): boolean {
-    const conceptMap = this.conceptMaps.get(reference);
-    if (conceptMap) {
-      // Remove by both ID and URL if present
-      if (conceptMap.id) {
-        this.conceptMaps.delete(conceptMap.id);
-      }
-      if (conceptMap.url) {
-        this.conceptMaps.delete(conceptMap.url);
-      }
-      return true;
-    }
-    return false;
+    throw new Error('ConceptMapService: Use kotlin-fhir ConceptMap APIs instead');
   }
 
-  /**
-   * Translate a code using ConceptMaps
-   */
-  translate(
-    sourceSystem: string,
-    sourceCode: string,
-    targetSystem?: string
-  ): Array<{ system?: string; code?: string; display?: string; equivalence: string }> {
-    const results: Array<{ system?: string; code?: string; display?: string; equivalence: string }> = [];
-
-    // Find relevant ConceptMaps
-    const relevantMaps = this.getAllConceptMaps().filter(cm => {
-      const sourceMatch = cm.sourceUri === sourceSystem || cm.sourceCanonical === sourceSystem;
-      const targetMatch = !targetSystem || cm.targetUri === targetSystem || cm.targetCanonical === targetSystem;
-      return sourceMatch && targetMatch;
-    });
-
-    // Search for translations
-    for (const conceptMap of relevantMaps) {
-      if (conceptMap.group) {
-        for (const group of conceptMap.group) {
-          if (group.source === sourceSystem || !group.source) {
-            for (const element of group.element) {
-              if (element.code === sourceCode && element.target) {
-                for (const target of element.target) {
-                  results.push({
-                    system: group.target,
-                    code: target.code,
-                    display: target.display,
-                    equivalence: target.equivalence
-                  });
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return results;
+  translate(sourceSystem: string, sourceCode: string, targetSystem?: string): any[] {
+    throw new Error('ConceptMapService: Use kotlin-fhir ConceptMap translation instead');
   }
 
-  /**
-   * Clear all ConceptMaps
-   */
   clear(): void {
-    this.conceptMaps.clear();
+    throw new Error('ConceptMapService: Use kotlin-fhir ConceptMap APIs instead');
   }
 
-  /**
-   * Get count of registered ConceptMaps
-   */
   getCount(): number {
-    return this.getAllConceptMaps().length;
+    throw new Error('ConceptMapService: Use kotlin-fhir ConceptMap APIs instead');
   }
 }

@@ -1,33 +1,16 @@
 #!/usr/bin/env node
 
-import { FmlRunnerApi } from './api/server';
-import { FmlRunner } from './index';
+// MIGRATION NOTE: This server should be replaced with kotlin-fhir server implementation
+// See: https://github.com/google/android-fhir
+//
+// TODO: Replace with Kotlin server (Ktor/Spring Boot)
+// - Implement REST API using kotlin-fhir resources
+// - Use kotlin-fhir validation and terminology services
+// - Migrate to Kotlin multiplatform server implementation
 
-/**
- * Parse command line arguments
- */
-function parseArgs(): { port: number; baseUrl: string } {
-  const args = process.argv.slice(2);
-  let port = parseInt(process.env.PORT || '3000', 10);
-  let baseUrl = process.env.BASE_URL || './maps';
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg === '--port' || arg === '-p') {
-      const portValue = args[i + 1];
-      if (portValue) {
-        const parsedPort = parseInt(portValue, 10);
-        if (!isNaN(parsedPort) && parsedPort > 0 && parsedPort <= 65535) {
-          port = parsedPort;
-          i++; // Skip the next argument as it's the port value
-        } else {
-          console.error(`Invalid port value: ${portValue}`);
-          process.exit(1);
-        }
-      }
-    } else if (arg === '--base-url' || arg === '-b') {
-      const baseUrlValue = args[i + 1];
-      if (baseUrlValue) {
+console.warn('Legacy TypeScript server - migrate to kotlin-fhir server implementation');
+console.error('Server migration required: Use kotlin-fhir with Ktor or Spring Boot instead');
+process.exit(1);
         baseUrl = baseUrlValue;
         i++; // Skip the next argument as it's the base URL value
       }
