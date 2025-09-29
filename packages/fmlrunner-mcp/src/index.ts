@@ -195,6 +195,20 @@ export class FmlRunnerMcp {
             }
           },
           {
+            name: 'validate-fml-syntax',
+            description: 'Validate FHIR Mapping Language (FML) syntax without compilation - provides detailed error reporting',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                fmlContent: {
+                  type: 'string',
+                  description: 'FML content to validate syntax (must start with map declaration)'
+                }
+              },
+              required: ['fmlContent']
+            }
+          },
+          {
             name: 'execute-structuremap',
             description: 'Execute a StructureMap transformation on input data',
             inputSchema: {
@@ -328,6 +342,9 @@ export class FmlRunnerMcp {
           case 'compile-fml':
             return await this.handleCompileFml(args);
           
+          case 'validate-fml-syntax':
+            return await this.handleValidateFmlSyntax(args);
+          
           case 'execute-structuremap':
             return await this.handleExecuteStructureMap(args);
           
@@ -384,6 +401,30 @@ export class FmlRunnerMcp {
             success: result.success,
             structureMap: result.structureMap,
             errors: result.errors
+          }, null, 2)
+        }
+      ]
+    };
+  }
+
+  private async handleValidateFmlSyntax(args: any): Promise<CallToolResult> {
+    // Validate input using the same schema as compile-fml
+    const validate = this.ajv.getSchema('fml-compilation-input');
+    if (!validate || !validate(args)) {
+      throw new Error(`Invalid input: ${validate?.errors?.map(e => e.message).join(', ')}`);
+    }
+
+    const result = this.fmlRunner.validateFmlSyntax(args.fmlContent);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            success: result.success,
+            isValid: result.isValid,
+            errors: result.errors || [],
+            warnings: result.warnings || []
           }, null, 2)
         }
       ]

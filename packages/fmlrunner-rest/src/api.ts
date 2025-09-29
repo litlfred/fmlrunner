@@ -33,6 +33,7 @@ export class FmlRunnerApi {
 
     // Legacy endpoints for backward compatibility 
     apiRouter.post('/compile', this.compileFml.bind(this));
+    apiRouter.post('/validate-syntax', this.validateFmlSyntax.bind(this));
     apiRouter.post('/execute', this.executeStructureMap.bind(this));
     apiRouter.get('/structuremap/:reference', this.getStructureMap.bind(this));
 
@@ -119,6 +120,43 @@ export class FmlRunnerApi {
         res.status(400).json({
           error: 'FML compilation failed',
           details: result.errors?.join(', ')
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Validate FML syntax without compilation
+   */
+  private async validateFmlSyntax(req: Request, res: Response): Promise<void> {
+    try {
+      const { fmlContent } = req.body;
+
+      if (!fmlContent) {
+        res.status(400).json({
+          error: 'fmlContent is required',
+          details: 'Request body must include fmlContent property'
+        });
+        return;
+      }
+
+      const result = this.fmlRunner.validateFmlSyntax(fmlContent);
+
+      if (result.success) {
+        res.json({
+          isValid: result.isValid,
+          errors: result.errors || [],
+          warnings: result.warnings || []
+        });
+      } else {
+        res.status(500).json({
+          error: 'FML syntax validation failed',
+          details: 'Internal validation error occurred'
         });
       }
     } catch (error) {

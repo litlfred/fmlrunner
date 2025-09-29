@@ -11,6 +11,7 @@ import { SchemaValidator } from './lib/schema-validator';
 import { 
   StructureMap, 
   FmlCompilationResult, 
+  FmlSyntaxValidationResult,
   ExecutionResult, 
   EnhancedExecutionResult,
   ExecutionOptions,
@@ -116,6 +117,25 @@ export class FmlRunner {
     this.logger.info('FML compilation completed', { 
       success: result.success, 
       errorCount: result.errors?.length || 0 
+    });
+    
+    return result;
+  }
+
+  /**
+   * Validate FML syntax without full compilation
+   * Provides detailed error reporting for syntax validation
+   */
+  validateFmlSyntax(fmlContent: string): FmlSyntaxValidationResult {
+    this.logger.debug('Validating FML syntax', { contentLength: fmlContent?.length || 0 });
+    
+    const result = this.compiler.validateSyntax(fmlContent);
+    
+    this.logger.info('FML syntax validation completed', { 
+      success: result.success,
+      isValid: result.isValid,
+      errorCount: result.errors?.length || 0,
+      warningCount: result.warnings?.length || 0
     });
     
     return result;

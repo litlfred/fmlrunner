@@ -1,4 +1,4 @@
-import { StructureMap, FmlCompilationResult, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
+import { StructureMap, FmlCompilationResult, FmlSyntaxValidationResult, FmlSyntaxError, FmlSyntaxWarning, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
 import { Logger } from './logger';
 
 /**
@@ -724,6 +724,194 @@ export class FmlCompiler {
         success: false,
         errors: [error instanceof Error ? error.message : 'Unknown compilation error']
       };
+    }
+  }
+
+  /**
+   * Validate FML syntax without full compilation - provides detailed error reporting
+   * @param fmlContent The FML content to validate
+   * @returns Validation result with detailed error information
+   */
+  validateSyntax(fmlContent: string): FmlSyntaxValidationResult {
+    const errors: FmlSyntaxError[] = [];
+    const warnings: FmlSyntaxWarning[] = [];
+
+    try {
+      // Basic validation
+      if (!fmlContent || fmlContent.trim().length === 0) {
+        errors.push({
+          message: 'FML content cannot be empty',
+          severity: 'error',
+          line: 0,
+          column: 0,
+          code: 'EMPTY_CONTENT'
+        });
+        return {
+          success: true,
+          isValid: false,
+          errors
+        };
+      }
+
+      // Tokenize the FML content with detailed error tracking
+      const tokenizer = new FmlTokenizer(fmlContent);
+      let tokens;
+      try {
+        tokens = tokenizer.tokenize();
+      } catch (tokenError) {
+        const error = tokenError as Error;
+        errors.push({
+          message: `Tokenization error: ${error.message}`,
+          severity: 'error',
+          code: 'TOKENIZATION_ERROR'
+        });
+        return {
+          success: true,
+          isValid: false,
+          errors
+        };
+      }
+
+      // Basic syntax checks on tokens
+      this.validateTokenSequence(tokens, errors, warnings);
+
+      // If tokenization passed, try parsing for syntax validation
+      try {
+        const parser = new FmlParser(tokens);
+        // We don't need the actual StructureMap, just validate the parsing can succeed
+        parser.parse();
+      } catch (parseError) {
+        const error = parseError as Error;
+        errors.push({
+          message: `Parse error: ${error.message}`,
+          severity: 'error',
+          code: 'PARSE_ERROR'
+        });
+      }
+
+      const isValid = errors.length === 0;
+      
+      return {
+        success: true,
+        isValid,
+        errors: errors.length > 0 ? errors : undefined,
+        warnings: warnings.length > 0 ? warnings : undefined
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        isValid: false,
+        errors: [{
+          message: `Syntax validation failed: ${err.message}`,
+          severity: 'error',
+          code: 'VALIDATION_FAILURE'
+        }]
+      };
+    }
+  }
+
+  /**
+   * Validate the sequence of tokens for common syntax issues
+   */
+  private validateTokenSequence(tokens: Token[], errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
+    if (tokens.length === 0) {
+      errors.push({
+        message: 'No tokens found in FML content',
+        severity: 'error',
+        code: 'NO_TOKENS'
+      });
+      return;
+    }
+
+    // Check if starts with 'map' keyword
+    const firstToken = tokens.find(token => token.type !== TokenType.WHITESPACE && token.type !== TokenType.COMMENT);
+    if (!firstToken || firstToken.type !== TokenType.MAP) {
+      errors.push({
+        message: 'FML content must start with "map" keyword',
+        severity: 'error',
+        line: firstToken?.line || 1,
+        column: firstToken?.column || 1,
+        code: 'MISSING_MAP_KEYWORD'
+      });
+    }
+
+    // Check for balanced braces and parentheses
+    let braceCount = 0;
+    let parenCount = 0;
+    let bracketCount = 0;
+
+    for (const token of tokens) {
+      switch (token.type) {
+        case TokenType.LBRACE:
+          braceCount++;
+          break;
+        case TokenType.RBRACE:
+          braceCount--;
+          if (braceCount < 0) {
+            errors.push({
+              message: 'Unmatched closing brace',
+              severity: 'error',
+              line: token.line,
+              column: token.column,
+              code: 'UNMATCHED_BRACE'
+            });
+          }
+          break;
+        case TokenType.LPAREN:
+          parenCount++;
+          break;
+        case TokenType.RPAREN:
+          parenCount--;
+          if (parenCount < 0) {
+            errors.push({
+              message: 'Unmatched closing parenthesis',
+              severity: 'error',
+              line: token.line,
+              column: token.column,
+              code: 'UNMATCHED_PAREN'
+            });
+          }
+          break;
+        case TokenType.LBRACKET:
+          bracketCount++;
+          break;
+        case TokenType.RBRACKET:
+          bracketCount--;
+          if (bracketCount < 0) {
+            errors.push({
+              message: 'Unmatched closing bracket',
+              severity: 'error',
+              line: token.line,
+              column: token.column,
+              code: 'UNMATCHED_BRACKET'
+            });
+          }
+          break;
+      }
+    }
+
+    // Check for unclosed braces/parentheses/brackets - these should be errors, not warnings
+    if (braceCount > 0) {
+      errors.push({
+        message: `${braceCount} unclosed brace(s)`,
+        severity: 'error',
+        code: 'UNCLOSED_BRACE'
+      });
+    }
+    if (parenCount > 0) {
+      errors.push({
+        message: `${parenCount} unclosed parenthesis/parentheses`,
+        severity: 'error',
+        code: 'UNCLOSED_PAREN'
+      });
+    }
+    if (bracketCount > 0) {
+      errors.push({
+        message: `${bracketCount} unclosed bracket(s)`,
+        severity: 'error',
+        code: 'UNCLOSED_BRACKET'
+      });
     }
   }
 
