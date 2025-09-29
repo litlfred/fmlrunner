@@ -18,6 +18,13 @@ lib-cov
 coverage/
 *.lcov
 
+# FHIR IG generated files
+output/
+fsh-generated/
+temp/
+template/
+input-cache/
+
 # nyc test coverage
 .nyc_output
 

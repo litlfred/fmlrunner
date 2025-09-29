@@ -1,0 +1,10 @@
+[
+  {
+    "name": "qr2patgender",
+    "files": {
+      "map": "qr2patgender/qr2patgender.map",
+      "input": "qr2patgender/qr-input.json",
+      "output": "qr2patgender/patient-output.json"
+    }
+  }
+]

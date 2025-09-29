@@ -1,0 +1,23 @@
+//
+// Source: FHIR/fhir-test-cases repository
+// URL: https://github.com/FHIR/fhir-test-cases/tree/main/r5/structure-mapping
+// 
+// (c) 2011+ HL7 FHIR Project
+// 
+// Licensed under the HL7 FHIR License - see LICENSE.txt at the root of this repository.
+// The original content is licensed under the HL7 FHIR License.
+// 
+// This content contains test cases and mapping specifications from the 
+// official FHIR test suite, used here under the terms of the HL7 license
+// for testing and validation purposes.
+//
+
+map "http://hl7.org/fhir/StructureMap/tutorial-step1" = "tutorial-step1"
+
+uses "http://hl7.org/fhir/StructureDefinition/Bundle" alias Bundle as source
+uses "http://hl7.org/fhir/StructureDefinition/Bundle" alias Bundle as target
+
+group bundle2bundle(source src : Bundle, target tgt : Bundle) {
+  src.type -> tgt.type;
+  src.entry -> tgt.entry;
+}

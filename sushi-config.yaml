@@ -1,0 +1,49 @@
+id: fmlrunner-test-suite
+canonical: http://fmlrunner.org/ImplementationGuide/test-suite
+name: FMLExecutionValidationTestSuite
+title: FML Execution Validation Test Suite
+description: A comprehensive test suite for validating FHIR Mapping Language (FML) execution using real-world test cases sourced from community FML projects.
+status: draft
+version: 0.1.0
+fhirVersion: 4.0.1
+copyrightYear: 2024+
+releaseLabel: draft
+publisher:
+  name: FML Runner Project
+  url: https://github.com/litlfred/fmlrunner
+jurisdiction: http://unstats.un.org/unsd/methods/m49/m49.htm#001 "World"
+
+dependencies:
+  hl7.fhir.uv.extensions: 1.0.0
+
+parameters:
+  show-inherited-invariants: false
+  usage-stats-opt-out: true
+  path-resource:
+    - input/testdata
+  path-pages:
+    - input/pagecontent
+  path-liquid:
+    - input/liquid
+
+pages:
+  index.md:
+    title: Home
+  test-suite.md:
+    title: Test Suite Overview
+  test-data.md:
+    title: Test Data Sources
+  license-compliance.md:
+    title: License Compliance
+
+menu:
+  Home: index.html
+  Test Suite: test-suite.html
+  Test Data: test-data.html
+  License: license-compliance.html
+  Artifacts: artifacts.html
+
+resources:
+  TestPlan/fml-execution-validation:
+    name: FML Execution Validation Test Plan
+    description: Comprehensive test plan for FML execution validation

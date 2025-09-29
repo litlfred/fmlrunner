@@ -1,0 +1,10 @@
+[
+  {
+    "name": "tutorial-step1",
+    "files": {
+      "map": "tutorial-step1/tutorial-step1.map",
+      "input": "tutorial-step1/tutorial-input.json"
+    },
+    "allFiles": ["tutorial-step1.map", "tutorial-input.json"]
+  }
+]
