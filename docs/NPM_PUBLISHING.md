@@ -1,17 +1,35 @@
 # NPM Publishing Guide
 
-This document describes the npm publishing process for the FML Runner monorepo packages.
+This document describes the npm publishing process for the FML Runner monorepo packages with integrated Kotlin/JS build workflow.
+
+## Build Architecture
+
+The FML Runner project uses a **hybrid build system** combining:
+- **Kotlin Multiplatform** for core business logic (JVM + JavaScript targets)
+- **NPM packages** for JavaScript/Node.js distribution  
+- **Integrated GitHub Actions workflows** ensuring Kotlin/JS artifacts are packaged for NPM
+
+### Workflow Integration
+
+```
+Kotlin/JS Build → Artifact Preparation → NPM Publishing
+```
+
+1. **`kotlin-js.yml`**: Builds Kotlin multiplatform code, runs tests, uploads JS artifacts
+2. **`publish-npm.yml`**: Downloads Kotlin/JS artifacts, packages for NPM, publishes
+
+The NPM workflow automatically depends on successful Kotlin/JS builds, ensuring published packages always include the latest compiled Kotlin code.
 
 ## Package Overview
 
 The FML Runner project consists of 4 npm packages published to the public npm registry:
 
-| Package | Description | NPM Link |
-|---------|-------------|----------|
-| **fmlrunner** | Core FML library with compilation and execution | [npm](https://www.npmjs.com/package/fmlrunner) |
-| **fmlrunner-rest** | REST API server with FHIR endpoints | [npm](https://www.npmjs.com/package/fmlrunner-rest) |
-| **fmlrunner-mcp** | Model Context Protocol interface for AI tools | [npm](https://www.npmjs.com/package/fmlrunner-mcp) |
-| **fmlrunner-web** | React web interface and documentation | [npm](https://www.npmjs.com/package/fmlrunner-web) |
+| Package | Description | Dependencies | NPM Link |
+|---------|-------------|--------------|----------|
+| **fmlrunner** | Core FML library with Kotlin/JS implementation | Kotlin/JS artifacts | [npm](https://www.npmjs.com/package/fmlrunner) |
+| **fmlrunner-rest** | REST API server with FHIR endpoints | fmlrunner | [npm](https://www.npmjs.com/package/fmlrunner-rest) |
+| **fmlrunner-mcp** | Model Context Protocol interface for AI tools | fmlrunner | [npm](https://www.npmjs.com/package/fmlrunner-mcp) |
+| **fmlrunner-web** | React web interface and documentation | fmlrunner | [npm](https://www.npmjs.com/package/fmlrunner-web) |
 
 ## Versioning Strategy
 
@@ -89,11 +107,28 @@ git push origin --tags
 
 ## Publishing Workflow Details
 
+### Build Process Integration
+
+The publishing workflow integrates Kotlin/JS and NPM builds:
+
+1. **Kotlin/JS Build Stage**
+   - ✅ **Kotlin Compilation** - Multi-platform code compilation
+   - ✅ **Kotlin Testing** - JVM and JavaScript test execution
+   - ✅ **Artifact Generation** - JavaScript build outputs created
+   - ✅ **Artifact Upload** - Build artifacts uploaded for NPM stage
+
+2. **NPM Publishing Stage**  
+   - ✅ **Artifact Download** - Kotlin/JS artifacts retrieved
+   - ✅ **Artifact Preparation** - Copy JS files to package dist directories
+   - ✅ **Package Validation** - Verify all required files present
+   - ✅ **Quality Checks** - Additional validation and testing
+   - ✅ **NPM Publishing** - Packages published to registry
+
 ### Dependency Order
 
 Packages are published in dependency order:
 
-1. **fmlrunner** (core library) - published first
+1. **fmlrunner** (core library with Kotlin/JS) - published first
 2. **fmlrunner-rest** (depends on fmlrunner)
 3. **fmlrunner-mcp** (depends on fmlrunner)  
 4. **fmlrunner-web** (depends on fmlrunner)
@@ -102,11 +137,10 @@ Packages are published in dependency order:
 
 Before publishing, the following checks are performed:
 
-- ✅ **Linting** - ESLint validation
-- ✅ **Testing** - All test suites pass
-- ✅ **Building** - TypeScript compilation
-- ✅ **Schema Validation** - JSON schemas compile
-- ✅ **Package Verification** - Contents check
+- ✅ **Kotlin/JS Build** - Multiplatform compilation and testing
+- ✅ **Artifact Validation** - Required JavaScript files present
+- ✅ **Package Verification** - NPM package contents check
+- ✅ **Version Consistency** - All packages use same version number
 
 ### Post-Publishing
 
