@@ -1,4 +1,4 @@
-import { StructureMap, FmlCompilationResult, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
+import { StructureMap, FmlCompilationResult, FmlSyntaxValidationResult, FmlSyntaxError, FmlSyntaxWarning, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
 import { Logger } from './logger';
 
 /**
@@ -728,6 +728,216 @@ export class FmlCompiler {
   }
 
   /**
+   * Validate FML syntax without compilation
+   * @param fmlContent The FML content to validate
+   * @returns Syntax validation result with detailed error information
+   */
+  validateSyntax(fmlContent: string): FmlSyntaxValidationResult {
+    const errors: FmlSyntaxError[] = [];
+    const warnings: FmlSyntaxWarning[] = [];
+
+    try {
+      // Basic validation
+      if (!fmlContent || fmlContent.trim().length === 0) {
+        errors.push({
+          message: 'FML content cannot be empty',
+          line: 1,
+          column: 1,
+          severity: 'error',
+          code: 'EMPTY_CONTENT'
+        });
+        return {
+          valid: false,
+          errors,
+          warnings
+        };
+      }
+
+      // Check for basic FML structure
+      const trimmedContent = fmlContent.trim();
+      if (!trimmedContent.startsWith('map')) {
+        errors.push({
+          message: "FML content must start with 'map' declaration",
+          line: 1,
+          column: 1,
+          severity: 'error',
+          code: 'MISSING_MAP_DECLARATION'
+        });
+      }
+
+      // Tokenize the FML content with enhanced error handling
+      let tokens: Token[] = [];
+      try {
+        const tokenizer = new FmlTokenizer(fmlContent);
+        tokens = tokenizer.tokenize();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown tokenization error';
+        // Extract line and column from error message if possible
+        const positionMatch = errorMessage.match(/line (\d+), column (\d+)/);
+        const line = positionMatch ? parseInt(positionMatch[1]) : 1;
+        const column = positionMatch ? parseInt(positionMatch[2]) : 1;
+        
+        errors.push({
+          message: errorMessage,
+          line,
+          column,
+          severity: 'error',
+          code: 'TOKENIZATION_ERROR'
+        });
+        return {
+          valid: false,
+          errors,
+          warnings
+        };
+      }
+
+      // Validate token structure
+      this.validateTokenStructure(tokens, errors, warnings);
+
+      // Attempt syntax parsing with enhanced error recovery
+      try {
+        const parser = new FmlSyntaxValidator(tokens);
+        const validationResult = parser.validateSyntax();
+        errors.push(...validationResult.errors);
+        warnings.push(...validationResult.warnings);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';
+        // Extract line and column from error message if possible
+        const positionMatch = errorMessage.match(/line (\d+), column (\d+)/);
+        const line = positionMatch ? parseInt(positionMatch[1]) : 1;
+        const column = positionMatch ? parseInt(positionMatch[2]) : 1;
+        
+        errors.push({
+          message: errorMessage,
+          line,
+          column,
+          severity: 'error',
+          code: 'SYNTAX_ERROR'
+        });
+      }
+
+      return {
+        valid: errors.length === 0,
+        errors,
+        warnings
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
+      errors.push({
+        message: errorMessage,
+        line: 1,
+        column: 1,
+        severity: 'error',
+        code: 'VALIDATION_ERROR'
+      });
+      
+      return {
+        valid: false,
+        errors,
+        warnings
+      };
+    }
+  }
+
+  /**
+   * Validate token structure for common issues
+   */
+  private validateTokenStructure(tokens: Token[], errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
+    let hasMapDeclaration = false;
+    let braceBalance = 0;
+    let parenBalance = 0;
+    let inString = false;
+
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      
+      switch (token.type) {
+        case TokenType.MAP:
+          if (hasMapDeclaration) {
+            warnings.push({
+              message: 'Multiple map declarations found',
+              line: token.line,
+              column: token.column,
+              severity: 'warning',
+              code: 'MULTIPLE_MAP_DECLARATIONS'
+            });
+          }
+          hasMapDeclaration = true;
+          break;
+
+        case TokenType.LBRACE:
+          braceBalance++;
+          break;
+
+        case TokenType.RBRACE:
+          braceBalance--;
+          if (braceBalance < 0) {
+            errors.push({
+              message: 'Unmatched closing brace',
+              line: token.line,
+              column: token.column,
+              severity: 'error',
+              code: 'UNMATCHED_BRACE'
+            });
+          }
+          break;
+
+        case TokenType.LPAREN:
+          parenBalance++;
+          break;
+
+        case TokenType.RPAREN:
+          parenBalance--;
+          if (parenBalance < 0) {
+            errors.push({
+              message: 'Unmatched closing parenthesis',
+              line: token.line,
+              column: token.column,
+              severity: 'error',
+              code: 'UNMATCHED_PAREN'
+            });
+          }
+          break;
+
+        case TokenType.STRING:
+          // Check for unterminated strings (this would be caught in tokenization but double-check)
+          break;
+      }
+    }
+
+    // Check final balances
+    if (braceBalance > 0) {
+      errors.push({
+        message: `${braceBalance} unclosed brace(s)`,
+        line: tokens[tokens.length - 1]?.line || 1,
+        column: tokens[tokens.length - 1]?.column || 1,
+        severity: 'error',
+        code: 'UNCLOSED_BRACE'
+      });
+    }
+
+    if (parenBalance > 0) {
+      errors.push({
+        message: `${parenBalance} unclosed parenthesis(es)`,
+        line: tokens[tokens.length - 1]?.line || 1,
+        column: tokens[tokens.length - 1]?.column || 1,
+        severity: 'error',
+        code: 'UNCLOSED_PAREN'
+      });
+    }
+
+    if (!hasMapDeclaration) {
+      errors.push({
+        message: 'Missing map declaration',
+        line: 1,
+        column: 1,
+        severity: 'error',
+        code: 'MISSING_MAP_DECLARATION'
+      });
+    }
+  }
+
+  /**
    * Legacy method for backwards compatibility - now uses the new parser
    * @deprecated Use compile() method instead
    */
@@ -737,5 +947,281 @@ export class FmlCompiler {
       return result.structureMap;
     }
     throw new Error(result.errors?.join(', ') || 'Compilation failed');
+  }
+}
+
+/**
+ * Enhanced FML syntax validator for detailed error reporting
+ */
+class FmlSyntaxValidator {
+  private tokens: Token[];
+  private current: number = 0;
+
+  constructor(tokens: Token[]) {
+    this.tokens = tokens;
+  }
+
+  validateSyntax(): { errors: FmlSyntaxError[]; warnings: FmlSyntaxWarning[] } {
+    const errors: FmlSyntaxError[] = [];
+    const warnings: FmlSyntaxWarning[] = [];
+
+    try {
+      this.validateMapDeclaration(errors, warnings);
+      this.validateStructuralElements(errors, warnings);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown syntax validation error';
+      const currentToken = this.peek();
+      errors.push({
+        message: errorMessage,
+        line: currentToken.line,
+        column: currentToken.column,
+        severity: 'error',
+        code: 'SYNTAX_VALIDATION_ERROR'
+      });
+    }
+
+    return { errors, warnings };
+  }
+
+  private validateMapDeclaration(errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
+    if (!this.check(TokenType.MAP)) {
+      errors.push({
+        message: "Expected 'map' keyword at start of FML content",
+        line: this.peek().line,
+        column: this.peek().column,
+        severity: 'error',
+        code: 'MISSING_MAP_KEYWORD'
+      });
+      return;
+    }
+
+    this.advance(); // consume MAP
+
+    // Expect URL string
+    if (!this.check(TokenType.STRING)) {
+      errors.push({
+        message: "Expected URL string after 'map' keyword",
+        line: this.peek().line,
+        column: this.peek().column,
+        severity: 'error',
+        code: 'MISSING_MAP_URL'
+      });
+      return;
+    }
+
+    const urlToken = this.advance();
+    
+    // Validate URL format
+    if (!this.isValidUrl(urlToken.value)) {
+      warnings.push({
+        message: 'Map URL should be a valid URI',
+        line: urlToken.line,
+        column: urlToken.column,
+        severity: 'warning',
+        code: 'INVALID_URL_FORMAT'
+      });
+    }
+
+    // Expect equals
+    if (!this.check(TokenType.EQUALS)) {
+      errors.push({
+        message: "Expected '=' after map URL",
+        line: this.peek().line,
+        column: this.peek().column,
+        severity: 'error',
+        code: 'MISSING_EQUALS'
+      });
+      return;
+    }
+
+    this.advance(); // consume EQUALS
+
+    // Expect name string
+    if (!this.check(TokenType.STRING)) {
+      errors.push({
+        message: "Expected name string after '='",
+        line: this.peek().line,
+        column: this.peek().column,
+        severity: 'error',
+        code: 'MISSING_MAP_NAME'
+      });
+      return;
+    }
+
+    this.advance(); // consume name
+  }
+
+  private validateStructuralElements(errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
+    // Skip optional uses, imports, prefix, conceptmap declarations
+    while (this.match(TokenType.USES, TokenType.IMPORTS, TokenType.PREFIX, TokenType.CONCEPTMAP)) {
+      this.skipStatement(errors, warnings);
+    }
+
+    // Validate groups
+    let hasGroups = false;
+    while (this.check(TokenType.GROUP)) {
+      hasGroups = true;
+      this.validateGroup(errors, warnings);
+    }
+
+    if (!hasGroups) {
+      warnings.push({
+        message: 'No groups defined in StructureMap',
+        line: this.peek().line,
+        column: this.peek().column,
+        severity: 'warning',
+        code: 'NO_GROUPS'
+      });
+    }
+  }
+
+  private validateGroup(errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
+    this.advance(); // consume GROUP
+
+    // Expect group name
+    if (!this.check(TokenType.IDENTIFIER)) {
+      errors.push({
+        message: 'Expected group name after GROUP keyword',
+        line: this.peek().line,
+        column: this.peek().column,
+        severity: 'error',
+        code: 'MISSING_GROUP_NAME'
+      });
+      return;
+    }
+
+    this.advance(); // consume group name
+
+    // Expect opening parenthesis
+    if (!this.check(TokenType.LPAREN)) {
+      errors.push({
+        message: "Expected '(' after group name",
+        line: this.peek().line,
+        column: this.peek().column,
+        severity: 'error',
+        code: 'MISSING_GROUP_LPAREN'
+      });
+      return;
+    }
+
+    this.advance(); // consume LPAREN
+
+    // Validate input parameters
+    this.validateGroupInputs(errors, warnings);
+
+    // Expect closing parenthesis
+    if (!this.check(TokenType.RPAREN)) {
+      errors.push({
+        message: "Expected ')' after group inputs",
+        line: this.peek().line,
+        column: this.peek().column,
+        severity: 'error',
+        code: 'MISSING_GROUP_RPAREN'
+      });
+      return;
+    }
+
+    this.advance(); // consume RPAREN
+
+    // Skip group body for now - would need more complex validation
+    this.skipToNextGroup(errors, warnings);
+  }
+
+  private validateGroupInputs(errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
+    if (this.check(TokenType.RPAREN)) {
+      warnings.push({
+        message: 'Group has no input parameters',
+        line: this.peek().line,
+        column: this.peek().column,
+        severity: 'warning',
+        code: 'NO_GROUP_INPUTS'
+      });
+      return;
+    }
+
+    // Parse input parameters
+    do {
+      if (!this.check(TokenType.IDENTIFIER)) {
+        errors.push({
+          message: 'Expected input parameter name',
+          line: this.peek().line,
+          column: this.peek().column,
+          severity: 'error',
+          code: 'MISSING_INPUT_NAME'
+        });
+        break;
+      }
+
+      this.advance(); // consume input name
+
+      // Check for optional type and mode declarations
+      if (this.check(TokenType.COLON)) {
+        this.advance(); // consume :
+        if (this.check(TokenType.IDENTIFIER)) {
+          this.advance(); // consume type
+        }
+      }
+
+    } while (this.match(TokenType.COMMA));
+  }
+
+  private skipStatement(errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
+    // Skip to next statement - simplified implementation
+    while (!this.isAtEnd() && !this.check(TokenType.GROUP, TokenType.MAP)) {
+      this.advance();
+    }
+  }
+
+  private skipToNextGroup(errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
+    // Skip to next group or end - simplified implementation
+    while (!this.isAtEnd() && !this.check(TokenType.GROUP)) {
+      this.advance();
+    }
+  }
+
+  private isValidUrl(url: string): boolean {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      // Check if it's a valid URI pattern
+      return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url);
+    }
+  }
+
+  // Utility methods
+  private match(...types: TokenType[]): boolean {
+    for (const type of types) {
+      if (this.check(type)) {
+        this.advance();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private check(...types: TokenType[]): boolean {
+    if (this.isAtEnd()) return false;
+    return types.includes(this.peek().type);
+  }
+
+  private advance(): Token {
+    if (!this.isAtEnd()) this.current++;
+    return this.previous();
+  }
+
+  private isAtEnd(): boolean {
+    return this.current >= this.tokens.length || this.peek().type === TokenType.EOF;
+  }
+
+  private peek(): Token {
+    if (this.current >= this.tokens.length) {
+      return { type: TokenType.EOF, value: '', line: 1, column: 1 };
+    }
+    return this.tokens[this.current];
+  }
+
+  private previous(): Token {
+    return this.tokens[this.current - 1];
   }
 }

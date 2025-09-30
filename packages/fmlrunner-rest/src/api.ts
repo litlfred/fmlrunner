@@ -36,6 +36,9 @@ export class FmlRunnerApi {
     apiRouter.post('/execute', this.executeStructureMap.bind(this));
     apiRouter.get('/structuremap/:reference', this.getStructureMap.bind(this));
 
+    // FML syntax validation endpoint
+    apiRouter.post('/validate-syntax', this.validateFmlSyntax.bind(this));
+
     // FHIR Bundle processing endpoint
     apiRouter.post('/Bundle', this.processBundle.bind(this));
     apiRouter.get('/Bundle/summary', this.getBundleSummary.bind(this));
@@ -125,6 +128,88 @@ export class FmlRunnerApi {
       res.status(500).json({
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Validate FML syntax without compilation
+   */
+  private async validateFmlSyntax(req: Request, res: Response): Promise<void> {
+    try {
+      const { fmlContent } = req.body;
+
+      if (!fmlContent) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'Request body must include fmlContent property'
+          }]
+        });
+        return;
+      }
+
+      const result = this.fmlRunner.validateFmlSyntax(fmlContent);
+
+      // Convert to FHIR OperationOutcome format
+      const issues: Array<{
+        severity: 'error' | 'warning' | 'information';
+        code: string;
+        diagnostics: string;
+        location?: string[];
+        extension?: Array<{ url: string; valueString: string }>;
+      }> = [
+        ...result.errors.map(error => ({
+          severity: 'error' as const,
+          code: 'syntax',
+          diagnostics: error.message,
+          location: [`line ${error.line}, column ${error.column}`],
+          extension: error.code ? [{
+            url: 'http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-code',
+            valueString: error.code
+          }] : undefined
+        })),
+        ...result.warnings.map(warning => ({
+          severity: 'warning' as const,
+          code: 'informational',
+          diagnostics: warning.message,
+          location: [`line ${warning.line}, column ${warning.column}`],
+          extension: warning.code ? [{
+            url: 'http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-code',
+            valueString: warning.code
+          }] : undefined
+        }))
+      ];
+
+      // Include success information for valid syntax
+      if (result.valid) {
+        issues.unshift({
+          severity: 'information',
+          code: 'informational',
+          diagnostics: 'FML syntax is valid'
+        });
+      }
+
+      const operationOutcome = {
+        resourceType: 'OperationOutcome',
+        issue: issues
+      };
+
+      if (result.valid) {
+        res.json(operationOutcome);
+      } else {
+        res.status(400).json(operationOutcome);
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
       });
     }
   }

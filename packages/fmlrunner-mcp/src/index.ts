@@ -85,6 +85,21 @@ export class FmlRunnerMcp {
     };
     this.ajv.addSchema(fmlCompilationInputSchema, 'fml-compilation-input');
 
+    // FML Syntax Validation Input Schema
+    const fmlSyntaxValidationInputSchema = {
+      type: 'object',
+      properties: {
+        fmlContent: {
+          type: 'string',
+          minLength: 1,
+          description: 'FHIR Mapping Language (FML) content to validate'
+        }
+      },
+      required: ['fmlContent'],
+      additionalProperties: false
+    };
+    this.ajv.addSchema(fmlSyntaxValidationInputSchema, 'fml-syntax-validation-input');
+
     // StructureMap Execution Input Schema
     const structureMapExecutionInputSchema = {
       type: 'object',
@@ -189,6 +204,20 @@ export class FmlRunnerMcp {
                 fmlContent: {
                   type: 'string',
                   description: 'FML content to compile (must start with map declaration)'
+                }
+              },
+              required: ['fmlContent']
+            }
+          },
+          {
+            name: 'validate-fml-syntax',
+            description: 'Validate FML syntax without compilation - provides detailed error reporting with line/column positions',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                fmlContent: {
+                  type: 'string',
+                  description: 'FML content to validate (must start with map declaration)'
                 }
               },
               required: ['fmlContent']
@@ -328,6 +357,9 @@ export class FmlRunnerMcp {
           case 'compile-fml':
             return await this.handleCompileFml(args);
           
+          case 'validate-fml-syntax':
+            return await this.handleValidateFmlSyntax(args);
+          
           case 'execute-structuremap':
             return await this.handleExecuteStructureMap(args);
           
@@ -384,6 +416,44 @@ export class FmlRunnerMcp {
             success: result.success,
             structureMap: result.structureMap,
             errors: result.errors
+          }, null, 2)
+        }
+      ]
+    };
+  }
+
+  private async handleValidateFmlSyntax(args: any): Promise<CallToolResult> {
+    // Validate input
+    const validate = this.ajv.getSchema('fml-syntax-validation-input');
+    if (!validate || !validate(args)) {
+      throw new Error(`Invalid input: ${validate?.errors?.map(e => e.message).join(', ')}`);
+    }
+
+    const result = this.fmlRunner.validateFmlSyntax(args.fmlContent);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            valid: result.valid,
+            errors: result.errors.map(error => ({
+              message: error.message,
+              line: error.line,
+              column: error.column,
+              severity: error.severity,
+              code: error.code
+            })),
+            warnings: result.warnings.map(warning => ({
+              message: warning.message,
+              line: warning.line,
+              column: warning.column,
+              severity: warning.severity,
+              code: warning.code
+            })),
+            summary: result.valid 
+              ? 'FML syntax is valid'
+              : `Found ${result.errors.length} error(s) and ${result.warnings.length} warning(s)`
           }, null, 2)
         }
       ]
