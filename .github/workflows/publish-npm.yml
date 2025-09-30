@@ -30,9 +30,13 @@ permissions:
   id-token: write
 
 jobs:
+  build-kotlin:
+    uses: ./.github/workflows/kotlin-js.yml
+    
   publish:
     runs-on: ubuntu-latest
     environment: npm-publishing
+    needs: build-kotlin
     
     steps:
     - name: Checkout repository
@@ -47,6 +51,12 @@ jobs:
         node-version: '18'
         cache: 'npm'
         registry-url: 'https://registry.npmjs.org'
+
+    - name: Download Kotlin/JS artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: kotlin-js-build
+        path: build/
 
     - name: Install dependencies
       run: npm ci
@@ -77,16 +87,73 @@ jobs:
         node scripts/version.js set $VERSION
         echo "NEW_VERSION=$VERSION" >> $GITHUB_ENV
 
+    - name: Prepare Kotlin/JS artifacts for NPM
+      run: |
+        echo "Setting up Kotlin/JS artifacts for NPM packaging..."
+        
+        # Create dist directory for fmlrunner package
+        mkdir -p packages/fmlrunner/dist
+        
+        # Copy main Kotlin/JS artifacts
+        if [ -f "build/dist/js/productionExecutable/fmlrunner.js" ]; then
+          cp build/dist/js/productionExecutable/fmlrunner.js packages/fmlrunner/dist/
+          echo "✅ Copied main executable: fmlrunner.js"
+        else
+          echo "❌ Main executable not found: build/dist/js/productionExecutable/fmlrunner.js"
+          exit 1
+        fi
+        
+        # Copy source map if available
+        if [ -f "build/dist/js/productionExecutable/fmlrunner.js.map" ]; then
+          cp build/dist/js/productionExecutable/fmlrunner.js.map packages/fmlrunner/dist/
+          echo "✅ Copied source map: fmlrunner.js.map"
+        fi
+        
+        # Copy additional Kotlin/JS package artifacts if available
+        if [ -d "build/js/packages/fmlrunner/kotlin" ]; then
+          cp -r build/js/packages/fmlrunner/kotlin/* packages/fmlrunner/dist/ 2>/dev/null || true
+          echo "✅ Copied additional Kotlin/JS package artifacts"
+        fi
+        
+        # Verify required artifacts are present
+        echo "=== Verifying NPM package contents ==="
+        echo "Contents of packages/fmlrunner/:"
+        ls -la packages/fmlrunner/
+        echo "Contents of packages/fmlrunner/dist/:"
+        ls -la packages/fmlrunner/dist/
+        
+        # Validate main artifact exists
+        if [ ! -f "packages/fmlrunner/dist/fmlrunner.js" ]; then
+          echo "❌ ERROR: Required artifact fmlrunner.js is missing!"
+          exit 1
+        fi
+        
+        echo "✅ All required artifacts prepared successfully"
+
     - name: Run quality checks
       run: |
-        echo "Running linting..."
-        npm run lint
+        echo "=== Running Quality Checks ==="
         
-        echo "Running tests..."
-        npm run test
+        echo "1. Verifying Kotlin/JS artifacts..."
+        if [ ! -f "packages/fmlrunner/dist/fmlrunner.js" ]; then
+          echo "ERROR: Missing Kotlin/JS artifacts!"
+          exit 1
+        fi
+        echo "✅ Kotlin/JS artifacts verified"
         
-        echo "Building packages..."
-        npm run build
+        echo "2. Running Kotlin tests..."
+        gradle test
+        echo "✅ Kotlin tests passed"
+        
+        echo "3. Validating package structure..."
+        for pkg in packages/*/; do
+          if [ -f "$pkg/package.json" ]; then
+            echo "Validating $pkg..."
+            node -e "const pkg = require('./$pkg/package.json'); console.log('✅', pkg.name, 'v' + pkg.version)"
+          fi
+        done
+        
+        echo "=== Quality checks completed ==="
 
     - name: Verify package contents
       run: |

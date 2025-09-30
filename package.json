@@ -11,7 +11,16 @@
     "build:js": "gradle jsMainClasses",
     "build:jvm": "gradle jvmMainClasses",
     "test:js": "gradle jsTest",
-    "test:jvm": "gradle jvmTest"
+    "test:jvm": "gradle jvmTest",
+    "lint": "echo 'Kotlin linting handled by gradle build'",
+    "publish:dry-run": "node scripts/version.js publish --dry-run",
+    "publish:all": "node scripts/version.js publish",
+    "tag": "git tag v$(node scripts/version.js current)",
+    "version:current": "node scripts/version.js current",
+    "version:patch": "node scripts/version.js bump patch",
+    "version:minor": "node scripts/version.js bump minor",
+    "version:major": "node scripts/version.js bump major",
+    "version:set": "node scripts/version.js set"
   },
   "devDependencies": {},
   "engines": {

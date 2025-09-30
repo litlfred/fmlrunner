@@ -1,0 +1,45 @@
+{
+  "name": "fmlrunner",
+  "version": "0.1.0",
+  "description": "FHIR Mapping Language (FML) Runner - Core library with Kotlin/JS implementation",
+  "main": "dist/fmlrunner.js",
+  "types": "fmlrunner.d.ts",
+  "files": [
+    "dist/",
+    "fmlrunner.d.ts",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "echo 'Build handled by Kotlin/JS gradle build'",
+    "test": "echo 'Tests handled by Kotlin/JS gradle test'",
+    "prepublishOnly": "echo 'Ensuring Kotlin/JS artifacts are present' && ls -la dist/"
+  },
+  "keywords": [
+    "fhir",
+    "fml",
+    "mapping",
+    "healthcare",
+    "interoperability",
+    "kotlin",
+    "multiplatform"
+  ],
+  "author": "Carl Leitner",
+  "license": "MIT",
+  "homepage": "https://github.com/litlfred/fmlrunner#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/litlfred/fmlrunner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/litlfred/fmlrunner/issues"
+  },
+  "engines": {
+    "node": ">=16",
+    "npm": ">=8"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
