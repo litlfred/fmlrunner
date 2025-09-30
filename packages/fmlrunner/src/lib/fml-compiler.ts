@@ -1139,11 +1139,11 @@ class FmlSyntaxValidator {
       return;
     }
 
-    // Parse input parameters
+    // Parse input parameters - handle both patterns: "mode name" and "mode name : type"
     do {
       if (!this.check(TokenType.IDENTIFIER)) {
         errors.push({
-          message: 'Expected input parameter name',
+          message: 'Expected input parameter mode or name',
           line: this.peek().line,
           column: this.peek().column,
           severity: 'error',
@@ -1152,9 +1152,14 @@ class FmlSyntaxValidator {
         break;
       }
 
-      this.advance(); // consume input name
+      this.advance(); // consume first identifier (could be mode or name)
 
-      // Check for optional type and mode declarations
+      // Check for second identifier (name when first is mode)
+      if (this.check(TokenType.IDENTIFIER)) {
+        this.advance(); // consume name
+      }
+
+      // Check for optional type declaration
       if (this.check(TokenType.COLON)) {
         this.advance(); // consume :
         if (this.check(TokenType.IDENTIFIER)) {
@@ -1173,8 +1178,37 @@ class FmlSyntaxValidator {
   }
 
   private skipToNextGroup(errors: FmlSyntaxError[], warnings: FmlSyntaxWarning[]): void {
-    // Skip to next group or end - simplified implementation
-    while (!this.isAtEnd() && !this.check(TokenType.GROUP)) {
+    // Skip group body by finding matching braces
+    let braceCount = 0;
+    let foundOpenBrace = false;
+
+    // Look for opening brace
+    while (!this.isAtEnd() && !foundOpenBrace) {
+      if (this.check(TokenType.LBRACE)) {
+        braceCount = 1;
+        foundOpenBrace = true;
+        this.advance();
+        break;
+      }
+      if (this.check(TokenType.GROUP)) {
+        // Found next group without opening brace
+        return;
+      }
+      this.advance();
+    }
+
+    if (!foundOpenBrace) {
+      // No group body found, that's OK
+      return;
+    }
+
+    // Skip until matching closing brace
+    while (!this.isAtEnd() && braceCount > 0) {
+      if (this.check(TokenType.LBRACE)) {
+        braceCount++;
+      } else if (this.check(TokenType.RBRACE)) {
+        braceCount--;
+      }
       this.advance();
     }
   }

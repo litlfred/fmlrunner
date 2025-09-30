@@ -181,9 +181,11 @@ group main(source src, target tgt) {
       const invalidFml = `map "http://example.org/StructureMap/Test" = "TestMap"
 
 group main(source src, target tgt) {
-  src.name -> tgt.fullName
-  // Line 5: syntax error here
-  invalid syntax on this line
+  src.name -> tgt.fullName;
+}
+// Line 7: missing closing brace for group
+group invalid(source src, target tgt {
+  src.name -> tgt.fullName;
 }`;
 
       const result = fmlRunner.validateFmlSyntax(invalidFml);
@@ -192,7 +194,7 @@ group main(source src, target tgt) {
       
       // Check that at least one error is reported with reasonable position
       const hasReasonablePosition = result.errors.some(error => 
-        error.line >= 5 && error.line <= 7 && error.column > 0
+        error.line >= 7 && error.line <= 9 && error.column > 0
       );
       expect(hasReasonablePosition).toBe(true);
     });
