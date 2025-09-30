@@ -1,0 +1,51 @@
+{
+  "testManifest": {
+    "name": "FML Execution Validation Test Manifest",
+    "version": "1.0.0",
+    "description": "Maps FML test cases to their input/output file sets",
+    "testCases": [
+      {
+        "id": "patient-basic-transform",
+        "name": "Basic Patient Transform",
+        "description": "Simple patient data transformation preserving core fields",
+        "files": {
+          "map": "examples/patient-transform.map",
+          "input": "examples/patient-input.json",
+          "output": "examples/patient-output.json"
+        },
+        "license": "MIT",
+        "tags": ["basic", "patient", "example"]
+      },
+      {
+        "id": "observation-basic-transform", 
+        "name": "Basic Observation Transform",
+        "description": "Simple observation data transformation with valueQuantity",
+        "files": {
+          "map": "examples/observation-transform.map",
+          "input": "examples/observation-input.json",
+          "output": "examples/observation-output.json"
+        },
+        "license": "MIT",
+        "tags": ["basic", "observation", "example"]
+      }
+    ],
+    "externalSources": [
+      {
+        "name": "FHIR Test Cases",
+        "repository": "https://github.com/FHIR/fhir-test-cases",
+        "path": "r5/structure-mapping",
+        "license": "HL7 FHIR License (CC0)",
+        "attribution": "FHIR® is the registered trademark of HL7 and is used with the permission of HL7.",
+        "status": "available-for-import"
+      },
+      {
+        "name": "Matchbox Test Cases",
+        "repository": "https://github.com/ahdis/matchbox", 
+        "path": "matchbox-server/src/test/resources",
+        "license": "Apache License 2.0",
+        "attribution": "Licensed under the Apache License, Version 2.0",
+        "status": "available-for-import"
+      }
+    ]
+  }
+}

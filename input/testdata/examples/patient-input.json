@@ -1,0 +1,11 @@
+{
+  "resourceType": "Patient",
+  "name": [
+    {
+      "family": "Doe",
+      "given": ["John"]
+    }
+  ],
+  "active": true,
+  "gender": "male"
+}

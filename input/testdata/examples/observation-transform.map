@@ -1,0 +1,14 @@
+/*
+ * Example Observation Transform Map  
+ * License: MIT (local example)
+ */
+
+map "http://example.org/StructureMap/ObservationTransform" = "ObservationTransform"
+
+group main(source src, target tgt) {
+  src.status -> tgt.status;
+  src.code -> tgt.code;
+  src.subject -> tgt.subject;
+  src.valueQuantity -> tgt.valueQuantity;
+  src.effectiveDateTime -> tgt.effectiveDateTime;
+}
