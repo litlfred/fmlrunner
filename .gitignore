@@ -115,6 +115,9 @@ public
 dist/
 build/
 
+# Package dist directories (created during workflow)
+packages/*/dist/
+
 # Test output
 test-results/
 coverage/
