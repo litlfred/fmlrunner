@@ -95,6 +95,16 @@ data class FmlCompilationResult(
 )
 
 /**
+ * FML Syntax Validation Result
+ */
+@Serializable
+data class FmlSyntaxValidationResult(
+    val valid: Boolean,
+    val errors: List<String> = emptyList(),
+    val warnings: List<String> = emptyList()
+)
+
+/**
  * Execution Result for StructureMap execution
  */
 @Serializable

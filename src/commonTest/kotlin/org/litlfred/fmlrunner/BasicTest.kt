@@ -95,4 +95,98 @@ class FmlRunnerTest {
         
         assertTrue(result.success, "Execution should succeed")
     }
+    
+    @Test
+    fun testValidFmlSyntaxValidation() {
+        val runner = FmlRunner()
+        val validFmlContent = """
+            map "http://example.org/StructureMap/Patient" = "PatientTransform"
+            
+            group main(source src, target tgt) {
+              src.name -> tgt.fullName;
+              src.active -> tgt.isActive;
+            }
+        """.trimIndent()
+        
+        val result = runner.validateFmlSyntax(validFmlContent)
+        assertTrue(result.valid, "Valid FML syntax should pass validation")
+        assertTrue(result.errors.isEmpty(), "No errors should be reported for valid syntax")
+    }
+    
+    @Test
+    fun testInvalidFmlSyntaxValidation_MissingMapKeyword() {
+        val runner = FmlRunner()
+        val invalidFmlContent = """
+            "http://example.org/StructureMap/Patient" = "PatientTransform"
+            
+            group main(source src, target tgt) {
+              src.name -> tgt.fullName;
+            }
+        """.trimIndent()
+        
+        val result = runner.validateFmlSyntax(invalidFmlContent)
+        assertTrue(!result.valid, "Invalid FML syntax should fail validation")
+        assertTrue(result.errors.isNotEmpty(), "Errors should be reported for invalid syntax")
+        assertTrue(result.errors.any { it.contains("map") || it.contains("Expected") }, 
+                   "Error should mention missing 'map' keyword")
+    }
+    
+    @Test
+    fun testInvalidFmlSyntaxValidation_MalformedGroup() {
+        val runner = FmlRunner()
+        val invalidFmlContent = """
+            map "http://example.org/StructureMap/Patient" = "PatientTransform"
+            
+            group main(source src, target tgt {
+              src.name -> tgt.fullName;
+            }
+        """.trimIndent()
+        
+        val result = runner.validateFmlSyntax(invalidFmlContent)
+        assertTrue(!result.valid, "Invalid FML syntax should fail validation")
+        assertTrue(result.errors.isNotEmpty(), "Errors should be reported for malformed syntax")
+    }
+    
+    @Test
+    fun testInvalidFmlSyntaxValidation_EmptyContent() {
+        val runner = FmlRunner()
+        val emptyContent = ""
+        
+        val result = runner.validateFmlSyntax(emptyContent)
+        assertTrue(!result.valid, "Empty content should fail validation")
+        assertTrue(result.errors.isNotEmpty(), "Errors should be reported for empty content")
+    }
+    
+    @Test
+    fun testInvalidFmlSyntaxValidation_MissingClosingBrace() {
+        val runner = FmlRunner()
+        val invalidFmlContent = """
+            map "http://example.org/StructureMap/Patient" = "PatientTransform"
+            
+            group main(source src, target tgt) {
+              src.name -> tgt.fullName;
+        """.trimIndent()
+        
+        val result = runner.validateFmlSyntax(invalidFmlContent)
+        assertTrue(!result.valid, "Invalid FML syntax should fail validation")
+        assertTrue(result.errors.isNotEmpty(), "Errors should be reported for missing closing brace")
+    }
+    
+    @Test
+    fun testComplexValidFmlSyntaxValidation() {
+        val runner = FmlRunner()
+        val complexValidFmlContent = """
+            map "http://example.org/StructureMap/Complex" = "ComplexTransform"
+            
+            group main(source src, target tgt) {
+              src.name -> tgt.fullName;
+              src.active -> tgt.isActive;
+              src.email -> tgt.contactEmail;
+            }
+        """.trimIndent()
+        
+        val result = runner.validateFmlSyntax(complexValidFmlContent)
+        assertTrue(result.valid, "Complex valid FML syntax should pass validation")
+        assertTrue(result.errors.isEmpty(), "No errors should be reported for complex valid syntax")
+    }
 }

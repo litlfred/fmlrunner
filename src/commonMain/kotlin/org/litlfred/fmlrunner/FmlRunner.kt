@@ -29,6 +29,13 @@ class FmlRunner {
     }
 
     /**
+     * Validate FML syntax without full compilation
+     */
+    fun validateFmlSyntax(fmlContent: String): FmlSyntaxValidationResult {
+        return compiler.validateSyntax(fmlContent)
+    }
+
+    /**
      * Execute StructureMap on input content
      */
     fun executeStructureMap(structureMapReference: String, inputContent: String, options: ExecutionOptions = ExecutionOptions()): ExecutionResult {

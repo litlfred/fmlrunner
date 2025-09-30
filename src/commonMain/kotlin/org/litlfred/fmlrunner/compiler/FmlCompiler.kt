@@ -464,4 +464,30 @@ class FmlCompiler {
             )
         }
     }
+    
+    /**
+     * Validate FML syntax without full compilation
+     */
+    fun validateSyntax(fmlContent: String): FmlSyntaxValidationResult {
+        return try {
+            // Tokenize
+            val tokenizer = FmlTokenizer(fmlContent)
+            val tokens = tokenizer.tokenize()
+            
+            // Parse for syntax validation (without requiring complete StructureMap)
+            val parser = FmlParser(tokens)
+            val result = parser.parse()
+            
+            FmlSyntaxValidationResult(
+                valid = result.success,
+                errors = result.errors,
+                warnings = result.warnings
+            )
+        } catch (e: Exception) {
+            FmlSyntaxValidationResult(
+                valid = false,
+                errors = listOf("Syntax validation failed: ${e.message}")
+            )
+        }
+    }
 }
