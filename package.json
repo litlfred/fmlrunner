@@ -1,50 +1,21 @@
 {
-  "name": "fmlrunner-monorepo",
+  "name": "fmlrunner",
   "version": "0.1.0",
-  "description": "Monorepo for FML Runner packages: core library, MCP interface, REST API, and web interface",
+  "description": "FHIR Mapping Language (FML) Runner - Kotlin Multiplatform implementation",
   "private": true,
-  "workspaces": [
-    "packages/fmlrunner",
-    "packages/fmlrunner-rest",
-    "packages/fmlrunner-mcp",
-    "packages/fmlrunner-kotlin-core"
-  ],
+
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
-    "clean": "npm run clean --workspaces --if-present",
-    "dev": "concurrently \"npm run dev --workspace=packages/fmlrunner-rest\"",
-    "build:web": "echo 'Web package removed to reduce dependencies'",
-    "deploy:web": "echo 'Web package removed to reduce dependencies'",
-    "version:patch": "node scripts/version.js bump patch",
-    "version:minor": "node scripts/version.js bump minor", 
-    "version:major": "node scripts/version.js bump major",
-    "version:set": "node scripts/version.js set",
-    "version:current": "node scripts/version.js current",
-    "publish:all": "npm run build && node scripts/version.js publish",
-    "publish:dry-run": "npm run build && node scripts/version.js publish --dry-run",
-    "prepare:publish": "node scripts/version.js prepare-publish",
-    "restore:dev": "node scripts/version.js restore-dev",
-    "prerelease": "npm run lint && npm run test && npm run build",
-    "release": "npm run prerelease && npm run publish:all",
-    "tag": "node scripts/version.js tag"
+    "build": "gradle build",
+    "test": "gradle test",
+    "clean": "gradle clean",
+    "build:js": "gradle jsMainClasses",
+    "build:jvm": "gradle jvmMainClasses",
+    "test:js": "gradle jsTest",
+    "test:jvm": "gradle jvmTest"
   },
-  "devDependencies": {
-    "@types/jest": "^29.0.0",
-    "@types/node": "^20.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
-    "jest": "^29.0.0",
-    "ts-jest": "^29.0.0",
-    "typescript": "^5.0.0",
-    "gh-pages": "^6.1.0",
-    "concurrently": "^8.2.0"
-  },
+  "devDependencies": {},
   "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
+    "java": ">=11"
   },
   "author": "Carl Leitner",
   "license": "MIT",
