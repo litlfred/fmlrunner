@@ -90,6 +90,9 @@ export class FmlRunnerApi {
     // Validation endpoint
     apiRouter.post('/validate', this.validateResource.bind(this));
 
+    // FML syntax validation endpoint
+    apiRouter.post('/validate-syntax', this.validateFmlSyntax.bind(this));
+
     // Health check endpoint
     apiRouter.get('/health', this.healthCheck.bind(this));
 
@@ -727,6 +730,62 @@ export class FmlRunnerApi {
       };
 
       if (validationResult.valid) {
+        res.json(operationOutcome);
+      } else {
+        res.status(400).json(operationOutcome);
+      }
+    } catch (error) {
+      res.status(500).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'exception',
+          diagnostics: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      });
+    }
+  }
+
+  /**
+   * Validate FML syntax
+   */
+  private async validateFmlSyntax(req: Request, res: Response): Promise<void> {
+    try {
+      const { fmlContent } = req.body;
+
+      if (!fmlContent) {
+        res.status(400).json({
+          resourceType: 'OperationOutcome',
+          issue: [{
+            severity: 'error',
+            code: 'invalid',
+            diagnostics: 'fmlContent is required'
+          }]
+        });
+        return;
+      }
+
+      const syntaxResult = this.fmlRunner.validateFmlSyntax(fmlContent);
+
+      const operationOutcome = {
+        resourceType: 'OperationOutcome',
+        issue: [
+          ...(syntaxResult.errors?.map(error => ({
+            severity: 'error' as const,
+            code: 'invalid' as const,
+            diagnostics: error.message,
+            location: [`line ${error.line}, column ${error.column}`]
+          })) || []),
+          ...(syntaxResult.warnings?.map(warning => ({
+            severity: 'warning' as const,
+            code: 'informational' as const,
+            diagnostics: warning.message,
+            location: [`line ${warning.line}, column ${warning.column}`]
+          })) || [])
+        ]
+      };
+
+      if (syntaxResult.success) {
         res.json(operationOutcome);
       } else {
         res.status(400).json(operationOutcome);

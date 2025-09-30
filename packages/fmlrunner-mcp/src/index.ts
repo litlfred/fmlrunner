@@ -300,6 +300,20 @@ export class FmlRunnerMcp {
             }
           },
           {
+            name: 'validate-fml-syntax',
+            description: 'Validate FML syntax without compilation, returning detailed error messages',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                fmlContent: {
+                  type: 'string',
+                  description: 'FML content to validate'
+                }
+              },
+              required: ['fmlContent']
+            }
+          },
+          {
             name: 'validate-code',
             description: 'Validate a code against a ValueSet or CodeSystem',
             inputSchema: {
@@ -346,6 +360,9 @@ export class FmlRunnerMcp {
           case 'translate-code':
             return await this.handleTranslateCode(args);
           
+          case 'validate-fml-syntax':
+            return await this.handleValidateFmlSyntax(args);
+          
           case 'validate-code':
             return await this.handleValidateCode(args);
           
@@ -384,6 +401,29 @@ export class FmlRunnerMcp {
             success: result.success,
             structureMap: result.structureMap,
             errors: result.errors
+          }, null, 2)
+        }
+      ]
+    };
+  }
+
+  private async handleValidateFmlSyntax(args: any): Promise<CallToolResult> {
+    // Use the same validation schema as compilation
+    const validate = this.ajv.getSchema('fml-compilation-input');
+    if (!validate || !validate(args)) {
+      throw new Error(`Invalid input: ${validate?.errors?.map(e => e.message).join(', ')}`);
+    }
+
+    const result = this.fmlRunner.validateFmlSyntax(args.fmlContent);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            success: result.success,
+            errors: result.errors,
+            warnings: result.warnings
           }, null, 2)
         }
       ]

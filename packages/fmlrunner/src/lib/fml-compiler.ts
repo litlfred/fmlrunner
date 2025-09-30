@@ -1,4 +1,4 @@
-import { StructureMap, FmlCompilationResult, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
+import { StructureMap, FmlCompilationResult, FmlSyntaxValidationResult, SyntaxError, SyntaxWarning, StructureMapGroup, StructureMapGroupInput, StructureMapGroupRule, StructureMapGroupRuleSource, StructureMapGroupRuleTarget } from '../types';
 import { Logger } from './logger';
 
 /**
@@ -692,6 +692,98 @@ export class FmlCompiler {
     this.logger = logger;
   }
   
+  /**
+   * Validate FML syntax without full compilation
+   * @param fmlContent The FML content to validate
+   * @returns Syntax validation result with detailed error messages
+   */
+  validateSyntax(fmlContent: string): FmlSyntaxValidationResult {
+    try {
+      // Basic validation
+      if (!fmlContent || fmlContent.trim().length === 0) {
+        return {
+          success: false,
+          errors: [{
+            message: 'FML content cannot be empty',
+            line: 1,
+            column: 1,
+            severity: 'error'
+          }]
+        };
+      }
+
+      const errors: SyntaxError[] = [];
+      const warnings: SyntaxWarning[] = [];
+
+      // Tokenize the FML content to check for lexical errors
+      try {
+        const tokenizer = new FmlTokenizer(fmlContent);
+        const tokens = tokenizer.tokenize();
+
+        // Check for basic structure requirements
+        const hasMapKeyword = tokens.some(token => token.type === TokenType.MAP);
+        if (!hasMapKeyword) {
+          warnings.push({
+            message: 'FML content should start with a "map" declaration',
+            line: 1,
+            column: 1,
+            severity: 'warning'
+          });
+        }
+
+        // Try parsing to detect structural issues
+        try {
+          const parser = new FmlParser(tokens);
+          parser.parse();
+        } catch (parseError) {
+          if (parseError instanceof Error) {
+            // Extract line and column information from error message if available
+            const lineColMatch = parseError.message.match(/line (\d+), column (\d+)/);
+            const line = lineColMatch ? parseInt(lineColMatch[1]) : 1;
+            const column = lineColMatch ? parseInt(lineColMatch[2]) : 1;
+            
+            errors.push({
+              message: parseError.message,
+              line,
+              column,
+              severity: 'error'
+            });
+          }
+        }
+      } catch (tokenError) {
+        if (tokenError instanceof Error) {
+          // Extract line and column information from tokenizer error
+          const lineColMatch = tokenError.message.match(/line (\d+), column (\d+)/);
+          const line = lineColMatch ? parseInt(lineColMatch[1]) : 1;
+          const column = lineColMatch ? parseInt(lineColMatch[2]) : 1;
+          
+          errors.push({
+            message: tokenError.message,
+            line,
+            column,
+            severity: 'error'
+          });
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        errors: errors.length > 0 ? errors : undefined,
+        warnings: warnings.length > 0 ? warnings : undefined
+      };
+    } catch (error) {
+      return {
+        success: false,
+        errors: [{
+          message: error instanceof Error ? error.message : 'Unknown validation error',
+          line: 1,
+          column: 1,
+          severity: 'error'
+        }]
+      };
+    }
+  }
+
   /**
    * Compile FML content to a StructureMap using proper parsing
    * @param fmlContent The FML content to compile
