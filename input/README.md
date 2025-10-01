@@ -1,6 +1,6 @@
 # FML Execution Validation Test Suite
 
-This directory contains a comprehensive FHIR IG-based validation test suite for FML (FHIR Mapping Language) using FHIR TestPlan and TestScript resources.
+This directory contains a comprehensive FHIR IG-based validation test suite for FML (FHIR Mapping Language) using FHIR TestPlan resources.
 
 ## Overview
 
@@ -66,13 +66,7 @@ The `FMLExecutionValidationTestPlan` defines:
 - **Test Cases**: Each mapping scenario with input/output validation
 - **Test Data**: References to map files, input data, and expected outputs
 - **Dependencies**: FHIR R5 StructureMap specification requirements
-
-### TestScript Execution
-
-The `FMLPatientTransformTestScript` provides:
-- **Executable Tests**: Actual test execution logic
-- **FHIRPath Assertions**: Output validation using FHIRPath expressions
-- **Fixtures**: Test data loading and reference management
+- **Validation**: Test execution expectations and requirements
 
 ## License Compliance
 
@@ -91,7 +85,6 @@ License headers are automatically added by the import script to ensure complianc
 1. Place test files in appropriate subdirectory under `input/testdata/`
 2. Ensure proper license attribution headers
 3. Update `FMLExecutionValidationTestPlan.fsh` with new test case definitions
-4. Add corresponding TestScript assertions for validation
 
 ### Test Execution
 
