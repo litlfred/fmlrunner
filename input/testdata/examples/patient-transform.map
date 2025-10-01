@@ -1,0 +1,12 @@
+/*
+ * Example Patient Transform Map
+ * License: MIT (local example)
+ */
+
+map "http://example.org/StructureMap/PatientTransform" = "PatientTransform"
+
+group main(source src, target tgt) {
+  src.name -> tgt.name;
+  src.active -> tgt.active;
+  src.gender -> tgt.gender;
+}

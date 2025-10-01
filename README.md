@@ -184,6 +184,9 @@ The project includes comprehensive test coverage across platforms:
 - **Execution Tests**: Transformation logic and cross-platform behavior
 - **Terminology Tests**: ConceptMap, ValueSet, CodeSystem operations
 - **Platform Tests**: JVM and JavaScript specific functionality
+- **FML Execution Validation Test Suite**: FHIR IG-based test plan with real-world test cases
+
+### Core Testing
 
 Run specific test suites:
 ```bash
@@ -202,6 +205,29 @@ gradle test --info
 # Run specific test class
 gradle jvmTest --tests "FmlRunnerTest"
 ```
+
+### FML Execution Validation Test Suite
+
+The project includes a comprehensive FHIR IG-based validation test suite located in `input/`:
+
+```bash
+# Import test cases from community FML projects
+npm run import:test-data
+
+# Explore available test repositories
+npm run explore:test-repos
+```
+
+The test suite includes:
+- **TestPlan Definition**: `input/fsh/tests/FMLExecutionValidationTestPlan.fsh`
+- **Test Data**: `input/testdata/` with properly attributed test cases from:
+  - ahdis/matchbox (Apache 2.0 license)
+  - FHIR/fhir-test-cases (HL7 copyright/CC0 license)
+  - Local examples (MIT license)
+
+**Published Test Documentation**: https://litlfred.github.io/fmlrunner/TestPlan/FMLExecutionValidationTestPlan.html
+
+For detailed information, see [`input/README.md`](input/README.md).
 
 ## API Reference
 
